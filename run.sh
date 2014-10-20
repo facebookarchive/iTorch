@@ -1,0 +1,1 @@
+ipython console --profile torch
