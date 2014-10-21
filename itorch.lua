@@ -6,6 +6,7 @@ local zassert = zmq.assert
 local json=require 'cjson'
 local uuid = require 'uuid'
 local tablex = require 'pl.tablex'
+local completer = require 'trepl.completer'
 require 'paths'
 -----------------------------------------
 local context = zmq.context()
@@ -77,7 +78,7 @@ iopub_router.status = function(sock, m, state)
    local o = {}
    o.uuid = {'status'};
    if m then o.parent_header = m.header end
-   o.header = {}; 
+   o.header = {};
    o.header.session = '????';
    if m then o.header.session = m.header.session end
    o.header.msg_id = uuid.new()
@@ -92,7 +93,7 @@ iopub_router.stream = function(sock, m, stream, text)
    local o = {}
    o.uuid = m.uuid
    o.parent_header = m.header
-   o.header = {}; 
+   o.header = {};
    o.header.msg_id = uuid.new();
    o.header.session = m.header.session;
    o.header.msg_type = 'stream';
@@ -137,9 +138,9 @@ shell_router.execute_request = function (sock, msg)
    iopub_router.status(iopub, msg, 'busy');
    local ok, result = pcall(function() loadstring(msg.content.code)() end); -- TODO: create a session per UUID
    if not ok then print('Error in executed code') end
-   if msg.content.store_history then 
+   if msg.content.store_history then
       exec_count = exec_count + 1; -- TODO: store the code for every call
-   end 
+   end
    local o = {}
    o.uuid = msg.uuid
    o.parent_header = msg.header
@@ -178,14 +179,44 @@ end
 shell_router.history_request = function (sock, msg)
    print('WARNING: history_request not handled yet')
 end
+
+
+function string.last(str) return string.sub(str, -1, -1) end
+
+local function extract_completions(code_string)
+   if not code_string then
+      print("WARNING: complete request sent a nil string")
+      return {}
+   end
+
+   if not string.last(code_string) == '.' then
+      print("WARNING: can only complete table lookups, ending with .")
+      return {}
+   end
+   return {
+      matches = completer.complete('', code_string, nil, nil),
+      matched_text = code_string
+   }
+end
+
+shell_router.complete_request = function(sock, msg)
+   msg.parent_header = msg.header
+   msg.header = tablex.deepcopy(msg.parent_header)
+   msg.header.msg_type = 'complete_reply';
+   msg.header.msg_id = uuid.new();
+   print("COMPLETING: ", json.encode(msg))
+   msg.content = extract_completions(msg.content.line)
+   ipyEncodeAndSend(sock, msg);
+end
+
 ---------------------------------------------------------------------------
-local function handleHeartbeat(sock) 
-   local m = zassert(sock:recv()); zassert(sock:send(m)) 
+local function handleHeartbeat(sock)
+   local m = zassert(sock:recv()); zassert(sock:send(m))
 end
 
 local function handleShell(sock)
    local msg = ipyDecode(sock)
-   assert(shell_router[msg.header.msg_type], 
+   assert(shell_router[msg.header.msg_type],
 	  'Cannot find appropriate message handler for ' .. msg.header.msg_type)
    return shell_router[msg.header.msg_type](sock, msg);
 end
