@@ -2,11 +2,10 @@
 require 'env' -- TODO: remove
 local zmq = require 'lzmq'
 local zloop = require 'lzmq.loop'
-local ztimer = require 'lzmq.timer'
-local zsleep = ztimer.sleep
 local zassert = zmq.assert
 local json=require 'cjson'
 local uuid = require 'uuid'
+local tablex = require 'pl.tablex'
 require 'paths'
 -----------------------------------------
 local context = zmq.context()
@@ -34,7 +33,8 @@ zassert(iopub, err)
 -- Common decoder function for all messages (except heartbeats which are just looped back)
 local function ipyDecode(sock)
    local m = zassert(sock:recv_all())
-   print(m)
+   -- print('incoming:')
+   -- print(m)
    local o = {}
    o.uuid = {}
    local i = -1
@@ -64,7 +64,8 @@ local function ipyEncodeAndSend(sock, m)
    if m.metadata then o[#o+1] = json.encode(m.metadata) else o[#o+1] = '{}' end
    if m.content then o[#o+1] = json.encode(m.content) else o[#o+1] = '{}' end
    if m.blob then o[#o+1] = blob end
-   print(o)
+   -- print('outgoing:')
+   -- print(o)
    zassert(sock:send_all(o))
 end
 ---------------------------------------------------------------------------
@@ -75,14 +76,14 @@ iopub_router.status = function(sock, m, state)
    assert(state, 'state string is nil to iopub_router.status');
    local o = {}
    o.uuid = {'status'};
+   if m then o.parent_header = m.header end
    o.header = {}; 
    o.header.session = '????';
+   if m then o.header.session = m.header.session end
    o.header.msg_id = uuid.new()
    o.header.msg_type = 'status';
    o.header.username = 'torchkernel';
-   o.content = {
-      execution_state = state
-   }
+   o.content = { execution_state = state }
    ipyEncodeAndSend(sock, o);
 end
 -- http://ipython.org/ipython-doc/dev/development/messaging.html#streams-stdout-stderr-etc
@@ -90,8 +91,9 @@ iopub_router.stream = function(sock, m, stream, text)
    stream = stream or 'stdout'
    local o = {}
    o.uuid = m.uuid
+   o.parent_header = m.header
    o.header = {}; 
-   o.header.msg_id = m.header.msg_id;
+   o.header.msg_id = uuid.new();
    o.header.session = m.header.session;
    o.header.msg_type = 'stream';
    o.content = {
@@ -105,16 +107,20 @@ end
 -- Shell router
 local shell_router = {}
 shell_router.connect_request = function (sock, msg)
+   msg.parent_header = msg.header
+   msg.header = tablex.deepcopy(msg.parent_header)
    msg.header.msg_type = 'connect_reply';
+   msg.header.msg_id = uuid.new();
    msg.content = ipycfg;
    ipyEncodeAndSend(sock, msg);
 end
 
 shell_router.kernel_info_request = function (sock, msg)
    iopub_router.status(sock, msg, 'busy');
+   msg.parent_header = msg.header
+   msg.header = tablex.deepcopy(msg.parent_header)
    msg.header.msg_type = 'kernel_info_reply';
    msg.header.msg_id = uuid.new();
-   msg.header.date = nil
    msg.content = {
       protocol_version = '5.0',
       implementation = 'itorch',
@@ -128,19 +134,49 @@ shell_router.kernel_info_request = function (sock, msg)
 end
 
 shell_router.execute_request = function (sock, msg)
-   iopub_router.status(sock, msg, 'busy');
-   loadstring(msg.content.code)(); -- create a session per UUID
-   if msg.content.store_history then exec_count = exec_count + 1; end
-   msg.header.msg_type = 'execute_reply'
-   msg.content = {
+   iopub_router.status(iopub, msg, 'busy');
+   local ok, result = pcall(function() loadstring(msg.content.code)() end); -- TODO: create a session per UUID
+   if not ok then print('Error in executed code') end
+   if msg.content.store_history then 
+      exec_count = exec_count + 1; -- TODO: store the code for every call
+   end 
+   local o = {}
+   o.uuid = msg.uuid
+   o.parent_header = msg.header
+   o.header = tablex.deepcopy(msg.header)
+   -- execute_input -- iopub
+   o.header.msg_id = uuid.new()
+   o.header.msg_type = 'execute_input'
+   o.content = {
+      code = msg.content.code,
+      execution_count = exec_count
+   }
+   ipyEncodeAndSend(iopub, o);
+   -- execute_result -- iopub
+   o.header.msg_id = uuid.new()
+   o.header.msg_type = 'execute_result'
+   o.content = {
+      data = {},
+      metadata = {},
+      execution_count = exec_count
+   }
+   o.content.data['text/plain'] = 'hello' -- TODO: fix
+   ipyEncodeAndSend(iopub, o);
+
+   -- execute_reply -- shell
+   o.header.msg_type = 'execute_reply'
+   o.content = {
       status = 'ok',
       execution_count = exec_count,
       payload = {},
       user_expressions = {}
    }
-   ipyEncodeAndSend(sock, msg);
-   iopub_router.status(sock, msg, 'idle');
-   iopub_router.stream(sock, msg, 'stdout', 'hello');
+   ipyEncodeAndSend(sock, o);
+   iopub_router.status(iopub, msg, 'idle');
+end
+
+shell_router.history_request = function (sock, msg)
+   print('WARNING: history_request not handled yet')
 end
 ---------------------------------------------------------------------------
 local function handleHeartbeat(sock) 
@@ -174,16 +210,6 @@ end
 
 iopub_router.status(iopub, nil, 'starting');
 
-while true do
-   if heartbeat:poll(1) then handleHeartbeat(heartbeat) end
-   if shell:poll(1) then handleShell(shell); end
-   if control:poll(1) then handleControl(control) end
-   if stdin:poll(1) then handleStdin(stdin) end
-   if iopub:poll(1) then handleIOPub(iopub) end
-   zsleep(10);
-end
-
---[[
 local loop = zloop.new(1, context)
 loop:add_socket(heartbeat, handleHeartbeat)
 loop:add_socket(shell, handleShell)
@@ -191,7 +217,6 @@ loop:add_socket(control, handleControl)
 loop:add_socket(stdin, handleStdin)
 loop:add_socket(iopub, handleIOPub)
 loop:start()
-]]--
 
 -- cleanup
 heartbeat:close()
