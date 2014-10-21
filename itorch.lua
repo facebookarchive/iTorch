@@ -180,22 +180,10 @@ shell_router.history_request = function (sock, msg)
    print('WARNING: history_request not handled yet')
 end
 
-
-function string.last(str) return string.sub(str, -1, -1) end
-
 local function extract_completions(code_string)
-   if not code_string then
-      print("WARNING: complete request sent a nil string")
-      return {}
-   end
-
-   if not string.last(code_string) == '.' then
-      print("WARNING: can only complete table lookups, ending with .")
-      return {}
-   end
    return {
       matches = completer.complete('', code_string, nil, nil),
-      matched_text = code_string
+      matched_text = '' -- e.g. torch.<TAB> should become torch.abs
    }
 end
 
