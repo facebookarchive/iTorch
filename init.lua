@@ -5,11 +5,16 @@ local zassert = zmq.assert
 local json=require 'cjson'
 local uuid = require 'uuid'
 local tablex = require 'pl.tablex'
+local stringx = require 'pl.stringx'
+stringx.import()
 local completer = require 'trepl.completer'
 require 'paths'
+require 'dok'
 -----------------------------------------
 local context = zmq.context()
-local exec_count = 0
+local exec_count = {}
+local code_history = {}
+local output_history = {}
 ------------------------------------------
 -- load and decode json config
 local ipyfile = assert(io.open(arg[1], "rb"), "Could not open iPython config")
@@ -77,9 +82,8 @@ iopub_router.status = function(sock, m, state)
    local o = {}
    o.uuid = {'status'};
    if m then o.parent_header = m.header end
-   o.header = {};
-   o.header.session = '????';
-   if m then o.header.session = m.header.session end
+   o.header = {};   
+   if m then o.header.session = m.header.session else o.header.session = '????'; end
    o.header.msg_id = uuid.new()
    o.header.msg_type = 'status';
    o.header.username = 'torchkernel';
@@ -94,11 +98,11 @@ iopub_router.stream = function(sock, m, stream, text)
    o.parent_header = m.header
    o.header = {};
    o.header.msg_id = uuid.new();
-   o.header.session = m.header.session;
    o.header.msg_type = 'stream';
+   o.header.session = m.header.session;
    o.content = {
       name = stream,
-      text = text
+      data = text
    }
    ipyEncodeAndSend(sock, o);
 end
@@ -122,67 +126,135 @@ shell_router.kernel_info_request = function (sock, msg)
    msg.header.msg_type = 'kernel_info_reply';
    msg.header.msg_id = uuid.new();
    msg.content = {
-      protocol_version = '5.0',
-      implementation = 'itorch',
-      implementation_version = '0.1',
-      language = 'luajit',
-      language_version = '5.1',
-      banner = 'Torch 7.0  Copyright (C) 2001-2014 Idiap, NEC, NYU, Deepmind'
+      protocol_version = {4,0},
+      language_version = {jit.version_num},
+      language = 'luajit'
    }
    ipyEncodeAndSend(sock, msg);
    iopub_router.status(sock, msg, 'idle');
 end
 
+shell_router.shutdown_request = function (sock, msg)
+   iopub_router.status(sock, msg, 'busy');
+   msg.parent_header = msg.header
+   msg.header = tablex.deepcopy(msg.parent_header)
+   msg.header.msg_type = 'shutdown_reply';
+   msg.header.msg_id = uuid.new();
+   ipyEncodeAndSend(sock, msg);
+   iopub_router.status(sock, msg, 'idle');
+   -- cleanup
+   heartbeat:close()
+   shell:close()
+   control:close()
+   stdin:close()
+   iopub:close()
+   loop:stop()
+end
+
+local function traceback(message)
+   local tp = type(message)
+   if tp ~= "string" and tp ~= "number" then return message end
+   local debug = _G.debug
+   if type(debug) ~= "table" then return message end
+   local tb = debug.traceback
+   if type(tb) ~= "function" then return message end
+   return tb(message)
+end
+
 shell_router.execute_request = function (sock, msg)
    iopub_router.status(iopub, msg, 'busy');
-   local ok, result = pcall(function() loadstring(msg.content.code)() end); -- TODO: create a session per UUID
-   if not ok then print('Error in executed code') end
-   if msg.content.store_history then
-      exec_count = exec_count + 1; -- TODO: store the code for every call
-   end
+   exec_count[msg.header.session] = exec_count[msg.header.session] or 0; -- lazy intialize
+   code_history[msg.header.session] = code_history[msg.header.session] or {}
+   output_history[msg.header.session] = output_history[msg.header.session] or {}
+   -- TODO: create a session per UUID
+   local ok, result = xpcall(function() loadstring(msg.content.code)() end, traceback);
+   
    local o = {}
    o.uuid = msg.uuid
    o.parent_header = msg.header
    o.header = tablex.deepcopy(msg.header)
-   -- execute_input -- iopub
+   if not msg.content.silent and msg.content.store_history then
+      exec_count[msg.header.session] = exec_count[msg.header.session] + 1; 
+      table.insert(code_history[msg.header.session], msg.content.code);
+      table.insert(output_history[msg.header.session], result);
+   end
+   -- pyin -- iopub
    o.header.msg_id = uuid.new()
-   o.header.msg_type = 'execute_input'
+   o.header.msg_type = 'pyin'
    o.content = {
       code = msg.content.code,
-      execution_count = exec_count
+      execution_count = exec_count[msg.header.session]
    }
-   ipyEncodeAndSend(iopub, o);
-   -- execute_result -- iopub
-   o.header.msg_id = uuid.new()
-   o.header.msg_type = 'execute_result'
-   o.content = {
-      data = {},
-      metadata = {},
-      execution_count = exec_count
-   }
-   o.content.data['text/plain'] = 'hello' -- TODO: fix
    ipyEncodeAndSend(iopub, o);
 
-   -- execute_reply -- shell
-   o.header.msg_type = 'execute_reply'
-   o.content = {
-      status = 'ok',
-      execution_count = exec_count,
-      payload = {},
-      user_expressions = {}
-   }
-   ipyEncodeAndSend(sock, o);
+   if ok then 
+      result = 'testresult[FIX THIS]'; -- TODO: fix
+      -- pyout -- iopub
+      if not msg.content.silent then
+	 o.header.msg_id = uuid.new()
+	 o.header.msg_type = 'pyout'
+	 o.content = {
+	    data = {},
+	    metadata = {},
+	    execution_count = exec_count[msg.header.session]
+	 }
+	 o.content.data['text/plain'] = result
+	 ipyEncodeAndSend(iopub, o);
+      end
+      -- execute_reply -- shell
+      o.header.msg_id = uuid.new()
+      o.header.msg_type = 'execute_reply'
+      o.content = {
+	 status = 'ok',
+	 execution_count = exec_count[msg.header.session],
+	 payload = {},
+	 user_variables = {},
+	 user_expressions = {}
+      }
+      ipyEncodeAndSend(sock, o);
+   else
+      -- pyerr -- iopub
+      o.header.msg_id = uuid.new()
+      o.header.msg_type = 'pyerr'
+      o.content = {
+	 execution_count = exec_count[msg.header.session],
+	 ename = result or 'Unknown Error',
+	 evalue = result.code or '',
+	 traceback = {result}
+      }
+      ipyEncodeAndSend(iopub, o);
+      -- execute_reply -- shell
+      o.header.msg_id = uuid.new()
+      o.header.msg_type = 'execute_reply'
+      o.content = {
+	 status = 'error',
+	 execution_count = exec_count[msg.header.session],
+	 ename = result or 'Unknown Error',
+	 evalue = result.code or '',
+	 traceback = {result}
+      }
+      ipyEncodeAndSend(sock, o);
+   end
    iopub_router.status(iopub, msg, 'idle');
 end
 
 shell_router.history_request = function (sock, msg)
-   print('WARNING: history_request not handled yet')
+   print('WARNING: history_request not handled yet');
 end
 
-local function extract_completions(code_string)
+local function extract_completions(text, line, block, pos)
+   -- word_break_characters = " \t\n\"\\'><=;:+-*/%^~#{}()[].,";
+   local words = line:split('.');
+   local word = words[#words]; words[#words] = nil; words = stringx.join('.', words)
+   if words ~= '' then  words = words .. '.' end
+   local matches = completer.complete(word, line, pos, nil)
+   for k,v in ipairs(matches) do
+      matches[k] = words .. matches[k]
+   end
    return {
-      matches = completer.complete('', code_string, nil, nil),
-      matched_text = '' -- e.g. torch.<TAB> should become torch.abs
+      matches = matches,
+      matched_text = line, -- e.g. torch.<TAB> should become torch.abs
+      status = 'ok'
    }
 end
 
@@ -191,14 +263,43 @@ shell_router.complete_request = function(sock, msg)
    msg.header = tablex.deepcopy(msg.parent_header)
    msg.header.msg_type = 'complete_reply';
    msg.header.msg_id = uuid.new();
-   print("COMPLETING: ", json.encode(msg))
-   msg.content = extract_completions(msg.content.line)
+   msg.content = extract_completions(msg.content.text, msg.content.line, 
+				     msg.content.block, msg.content.cursor_pos)
+   ipyEncodeAndSend(sock, msg);
+end
+
+shell_router.object_info_request = function(sock, msg)
+   print(msg)
+   local c = msg.content
+   msg.parent_header = msg.header
+   msg.header = tablex.deepcopy(msg.parent_header)
+   msg.header.msg_type = 'object_info_reply';
+   msg.header.msg_id = uuid.new();
+   msg.content = {
+      name = c.oname,
+      found = true,
+      ismagic = false,
+      isalias = false,
+      namespace = '',
+      type_name = '',
+      string_form = help(c.oname),
+      base_class = '',
+      length = '',
+      file = '',
+      definition = '',
+      argspect = {},
+      init_definition = '',
+      docstring = '',
+      class_docstring = '',
+      call_docstring = '',
+      source = ''
+   }
    ipyEncodeAndSend(sock, msg);
 end
 
 ---------------------------------------------------------------------------
 local function handleHeartbeat(sock)
-   local m = zassert(sock:recv()); zassert(sock:send(m))
+   local m = zassert(sock:recv_all()); zassert(sock:send_all(m))
 end
 
 local function handleShell(sock)
@@ -209,26 +310,28 @@ local function handleShell(sock)
 end
 
 local function handleControl(sock)
-   print('ct')
-   local buffer = zassert(sock:recv())
-   zassert(sock:send(buffer))
+   local msg = ipyDecode(sock);
+   assert(shell_router[msg.header.msg_type],
+	  'Cannot find appropriate message handler for ' .. msg.header.msg_type)
+   return shell_router[msg.header.msg_type](sock, msg);
 end
 
 local function handleStdin(sock)
    print('stdin')
-   local buffer = zassert(sock:recv())
-   zassert(sock:send(buffer))
+   local buffer = zassert(sock:recv_all())
+   zassert(sock:send_all(buffer))
 end
 
 local function handleIOPub(sock)
-   print('io')
-   local buffer = zassert(sock:recv())
-   zassert(sock:send(buffer))
+   local msg = ipyDecode(sock);
+   assert(iopub_router[msg.header.msg_type],
+	  'Cannot find appropriate message handler for ' .. msg.header.msg_type)
+   return iopub_router[msg.header.msg_type](sock, msg);
 end
 
 iopub_router.status(iopub, nil, 'starting');
 
-local loop = zloop.new(1, context)
+loop = zloop.new(1, context)
 loop:add_socket(heartbeat, handleHeartbeat)
 loop:add_socket(shell, handleShell)
 loop:add_socket(control, handleControl)
@@ -236,9 +339,3 @@ loop:add_socket(stdin, handleStdin)
 loop:add_socket(iopub, handleIOPub)
 loop:start()
 
--- cleanup
-heartbeat:close()
-shell:close()
-control:close()
-stdin:close()
-iopub:close()

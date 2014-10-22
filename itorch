@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+ipython $1 --profile torch
