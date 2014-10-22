@@ -300,7 +300,7 @@ end
 
 ---------------------------------------------------------------------------
 local function handleHeartbeat(sock)
-   local m = zassert(sock:recv()); zassert(sock:send(m))
+   local m = zassert(sock:recv_all()); zassert(sock:send_all(m))
 end
 
 local function handleShell(sock)
@@ -311,21 +311,22 @@ local function handleShell(sock)
 end
 
 local function handleControl(sock)
-   print('ct')
-   local buffer = zassert(sock:recv())
-   zassert(sock:send(buffer))
+   local msg = ipyDecode(sock);
+   assert(shell_router[msg.header.msg_type],
+	  'Cannot find appropriate message handler for ' .. msg.header.msg_type)
+   return shell_router[msg.header.msg_type](sock, msg);
 end
 
 local function handleStdin(sock)
    print('stdin')
-   local buffer = zassert(sock:recv())
-   zassert(sock:send(buffer))
+   local buffer = zassert(sock:recv_all())
+   zassert(sock:send_all(buffer))
 end
 
 local function handleIOPub(sock)
    print('io')
-   local buffer = zassert(sock:recv())
-   zassert(sock:send(buffer))
+   local buffer = zassert(sock:recv_all())
+   zassert(sock:send_all(buffer))
 end
 
 iopub_router.status(iopub, nil, 'starting');
