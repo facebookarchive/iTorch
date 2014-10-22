@@ -10,6 +10,7 @@ local stringx = require 'pl.stringx'
 stringx.import()
 local completer = require 'trepl.completer'
 require 'paths'
+require 'dok'
 -----------------------------------------
 local context = zmq.context()
 local exec_count = {}
@@ -188,7 +189,7 @@ shell_router.execute_request = function (sock, msg)
    ipyEncodeAndSend(iopub, o);
 
    if ok then 
-      result = 'hellotest'; -- TODO: fix
+      result = 'testresult[FIX THIS]'; -- TODO: fix
       -- pyout -- iopub
       if not msg.content.silent then
 	 o.header.msg_id = uuid.new()
@@ -265,6 +266,35 @@ shell_router.complete_request = function(sock, msg)
    msg.header.msg_id = uuid.new();
    msg.content = extract_completions(msg.content.text, msg.content.line, 
 				     msg.content.block, msg.content.cursor_pos)
+   ipyEncodeAndSend(sock, msg);
+end
+
+shell_router.object_info_request = function(sock, msg)
+   print(msg)
+   local c = msg.content
+   msg.parent_header = msg.header
+   msg.header = tablex.deepcopy(msg.parent_header)
+   msg.header.msg_type = 'object_info_reply';
+   msg.header.msg_id = uuid.new();
+   msg.content = {
+      name = c.oname,
+      found = true,
+      ismagic = false,
+      isalias = false,
+      namespace = '',
+      type_name = '',
+      string_form = help(c.oname),
+      base_class = '',
+      length = '',
+      file = '',
+      definition = '',
+      argspect = {},
+      init_definition = '',
+      docstring = '',
+      class_docstring = '',
+      call_docstring = '',
+      source = ''
+   }
    ipyEncodeAndSend(sock, msg);
 end
 
