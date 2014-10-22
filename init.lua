@@ -167,7 +167,18 @@ shell_router.execute_request = function (sock, msg)
    code_history[msg.header.session] = code_history[msg.header.session] or {}
    output_history[msg.header.session] = output_history[msg.header.session] or {}
    -- TODO: create a session per UUID
-   local ok, result = xpcall(function() loadstring(msg.content.code)() end, traceback);
+   local ok, result, output
+   do
+      local stdout_current = io.output()
+      local stdout_tmp = io.tmpfile()
+      stdout_tmp:setvbuf("no")
+      io.output(stdout_tmp)
+      ok, result = xpcall(function() loadstring(msg.content.code)() end, traceback);
+      io.output(stdout_current)
+      stdout_tmp:seek('set', 0)
+      output = stdout_tmp:read("*all")
+      stdout_tmp:close()
+   end
    
    local o = {}
    o.uuid = msg.uuid
@@ -188,9 +199,8 @@ shell_router.execute_request = function (sock, msg)
    ipyEncodeAndSend(iopub, o);
 
    if ok then 
-      result = 'testresult[FIX THIS]'; -- TODO: fix
       -- pyout -- iopub
-      if not msg.content.silent then
+      if not msg.content.silent  and output then
 	 o.header.msg_id = uuid.new()
 	 o.header.msg_type = 'pyout'
 	 o.content = {
@@ -198,7 +208,7 @@ shell_router.execute_request = function (sock, msg)
 	    metadata = {},
 	    execution_count = exec_count[msg.header.session]
 	 }
-	 o.content.data['text/plain'] = result
+	 o.content.data['text/plain'] = output
 	 ipyEncodeAndSend(iopub, o);
       end
       -- execute_reply -- shell

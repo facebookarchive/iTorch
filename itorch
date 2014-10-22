@@ -1,2 +1,6 @@
 #!/usr/bin/env sh
-ipython $1 --profile torch
+mode=$1
+if [ -z "$mode" ]; then
+    mode="console"
+fi
+ipython $mode --profile torch
