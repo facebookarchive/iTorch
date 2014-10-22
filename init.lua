@@ -1,4 +1,3 @@
-#!/usr/bin/env luajit
 require 'env' -- TODO: remove
 local zmq = require 'lzmq'
 local zloop = require 'lzmq.loop'
