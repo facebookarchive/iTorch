@@ -324,9 +324,10 @@ local function handleStdin(sock)
 end
 
 local function handleIOPub(sock)
-   print('io')
-   local buffer = zassert(sock:recv_all())
-   zassert(sock:send_all(buffer))
+   local msg = ipyDecode(sock);
+   assert(iopub_router[msg.header.msg_type],
+	  'Cannot find appropriate message handler for ' .. msg.header.msg_type)
+   return iopub_router[msg.header.msg_type](sock, msg);
 end
 
 iopub_router.status(iopub, nil, 'starting');
