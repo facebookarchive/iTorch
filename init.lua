@@ -287,7 +287,9 @@ shell_router.complete_request = function(sock, msg)
 end
 
 shell_router.object_info_request = function(sock, msg)
-   print(msg)
+   -- print(msg)
+   -- TODO: I dont understand when this thing is called and when it isn't
+   --[[
    local c = msg.content
    msg.parent_header = msg.header
    msg.header = tablex.deepcopy(msg.parent_header)
@@ -313,6 +315,7 @@ shell_router.object_info_request = function(sock, msg)
       source = ''
    }
    ipyEncodeAndSend(sock, msg);
+   ]]--
 end
 
 ---------------------------------------------------------------------------
