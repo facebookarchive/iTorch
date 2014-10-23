@@ -184,7 +184,6 @@ shell_router.execute_request = function (sock, msg)
       local stdo = io.open(stdof, 'r')
       stdo:seek('set', pos_old)
       output = stdo:read("*all")
-      output = output:sub(1,#output-1) -- remove last new-line
       pos_old = stdo:seek('end')
       stdo:close()
    end
