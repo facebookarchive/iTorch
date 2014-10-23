@@ -11,6 +11,8 @@ local completer = require 'trepl.completer'
 require 'paths'
 require 'dok'
 local luajit_path = arg[2]
+local stdof = arg[3]
+local stdef = arg[4]
 local context = zmq.context()
 -----------------------------------------
 local session = {}
@@ -19,15 +21,6 @@ session.create = function(self, uuid)
    -- history
    s.history = { code = {}, output = {} }
    s.exec_count = 0
-   -- processes and piping
-   s.pipe = {o_fn = os.tmpname(), e_fn = os.tmpname()}
-   s.cmd = luajit_path .. ' -i -litorch.session >' .. s.pipe.o_fn .. ' 2>' .. s.pipe.e_fn .. ' &'
-   s.pipe.i = io.popen(s.cmd, 'w');
-   s.pipe.o = io.open(s.pipe.o_fn, 'r');
-   s.pipe.o:setvbuf('no')
-   s.pipe.e = io.open(s.pipe.e_fn, 'r');
-   s.pipe.e:setvbuf('no')
-
    -- set and return
    self[uuid] = s
    return self[uuid]
@@ -168,14 +161,34 @@ shell_router.shutdown_request = function (sock, msg)
    loop:stop()
 end
 
+local function traceback(message)
+   local tp = type(message)
+   if tp ~= "string" and tp ~= "number" then return message end
+   local debug = _G.debug
+   if type(debug) ~= "table" then return message end
+   local tb = debug.traceback
+   if type(tb) ~= "function" then return message end
+   return tb(message)
+end
+
+
+local stdo = io.open(stdof, 'r')
+local pos_old = stdo:seek('end')
+stdo:close()
 shell_router.execute_request = function (sock, msg)
    iopub_router.status(iopub, msg, 'busy');
    local s = session[msg.header.session] or session:create(msg.header.session)
-   s.pipe.i:write(msg.content.code);
-   s.pipe.i:flush()
-   local output = s.pipe.o:read("*all")
-   local error = s.pipe.e:read("*all")
-   local ok = not (err and err ~= '')
+   local ok, result, output
+   do
+      ok, result = xpcall(function() loadstring(msg.content.code)() end, traceback);
+      local stdo = io.open(stdof, 'r')
+      stdo:seek('set', pos_old)
+      output = stdo:read("*all")
+      output = output:sub(1,#output-1) -- remove last new-line
+      pos_old = stdo:seek('end')
+      stdo:close()
+   end
+
    local o = {}
    o.uuid = msg.uuid
    o.parent_header = msg.header
@@ -226,7 +239,7 @@ shell_router.execute_request = function (sock, msg)
 	 execution_count = s.exec_count,
 	 ename = result or 'Unknown Error',
 	 evalue = result.code or '',
-	 traceback = {error}
+	 traceback = {result}
       }
       ipyEncodeAndSend(iopub, o);
       -- execute_reply -- shell
@@ -237,7 +250,7 @@ shell_router.execute_request = function (sock, msg)
 	 execution_count = s.exec_count,
 	 ename = result or 'Unknown Error',
 	 evalue = result.code or '',
-	 traceback = {error}
+	 traceback = {result}
       }
       ipyEncodeAndSend(sock, o);
    end

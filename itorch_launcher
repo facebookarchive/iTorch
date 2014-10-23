@@ -1,4 +1,9 @@
 #!/usr/bin/env sh
 currdir=`dirname $0`
 currdir=$(cd "$currdir" && pwd)
-$currdir/luajit -e "arg={'$1','$currdir/luajit'}; require 'itorch'"
+istdout=$(mktemp -t itorch.stdout)
+istderr=$(mktemp -t itorch.stdout)
+echo $istdout
+echo $istderr
+script -q /dev/null $currdir/luajit -e "arg={'$1','$currdir/luajit','$istdout', '$istderr'}; require 'itorch'" >$istdout 2>$istderr
+rm -f $istdout $istderr
