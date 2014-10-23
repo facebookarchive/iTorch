@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 currdir=`dirname $0`
 currdir=$(cd "$currdir" && pwd)
-$currdir/luajit -e "arg={'$1'}; require 'itorch'"
+$currdir/luajit -e "arg={'$1','$currdir/luajit'}; require 'itorch'"

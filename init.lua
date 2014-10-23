@@ -10,11 +10,28 @@ stringx.import()
 local completer = require 'trepl.completer'
 require 'paths'
 require 'dok'
------------------------------------------
+local luajit_path = arg[2]
 local context = zmq.context()
-local exec_count = {}
-local code_history = {}
-local output_history = {}
+-----------------------------------------
+local session = {}
+session.create = function(self, uuid)
+   local s = {}
+   -- history
+   s.history = { code = {}, output = {} }
+   s.exec_count = 0
+   -- processes and piping
+   s.pipe = {o_fn = os.tmpname(), e_fn = os.tmpname()}
+   s.cmd = luajit_path .. ' -i -litorch.session >' .. s.pipe.o_fn .. ' 2>' .. s.pipe.e_fn .. ' &'
+   s.pipe.i = io.popen(s.cmd, 'w');
+   s.pipe.o = io.open(s.pipe.o_fn, 'r');
+   s.pipe.o:setvbuf('no')
+   s.pipe.e = io.open(s.pipe.e_fn, 'r');
+   s.pipe.e:setvbuf('no')
+
+   -- set and return
+   self[uuid] = s
+   return self[uuid]
+end
 ------------------------------------------
 -- load and decode json config
 local ipyfile = assert(io.open(arg[1], "rb"), "Could not open iPython config")
@@ -151,62 +168,41 @@ shell_router.shutdown_request = function (sock, msg)
    loop:stop()
 end
 
-local function traceback(message)
-   local tp = type(message)
-   if tp ~= "string" and tp ~= "number" then return message end
-   local debug = _G.debug
-   if type(debug) ~= "table" then return message end
-   local tb = debug.traceback
-   if type(tb) ~= "function" then return message end
-   return tb(message)
-end
-
 shell_router.execute_request = function (sock, msg)
    iopub_router.status(iopub, msg, 'busy');
-   exec_count[msg.header.session] = exec_count[msg.header.session] or 0; -- lazy intialize
-   code_history[msg.header.session] = code_history[msg.header.session] or {}
-   output_history[msg.header.session] = output_history[msg.header.session] or {}
-   -- TODO: create a session per UUID
-   local ok, result, output
-   do
-      local stdout_current = io.output()
-      local stdout_tmp = io.tmpfile()
-      stdout_tmp:setvbuf("no")
-      io.output(stdout_tmp)
-      ok, result = xpcall(function() loadstring(msg.content.code)() end, traceback);
-      io.output(stdout_current)
-      stdout_tmp:seek('set', 0)
-      output = stdout_tmp:read("*all")
-      stdout_tmp:close()
-   end
-   
+   local s = session[msg.header.session] or session:create(msg.header.session)
+   s.pipe.i:write(msg.content.code);
+   s.pipe.i:flush()
+   local output = s.pipe.o:read("*all")
+   local error = s.pipe.e:read("*all")
+   local ok = not (err and err ~= '')
    local o = {}
    o.uuid = msg.uuid
    o.parent_header = msg.header
    o.header = tablex.deepcopy(msg.header)
    if not msg.content.silent and msg.content.store_history then
-      exec_count[msg.header.session] = exec_count[msg.header.session] + 1; 
-      table.insert(code_history[msg.header.session], msg.content.code);
-      table.insert(output_history[msg.header.session], result);
+      s.exec_count = s.exec_count + 1; 
+      table.insert(s.history.code, msg.content.code);
+      table.insert(s.history.output, output);
    end
    -- pyin -- iopub
    o.header.msg_id = uuid.new()
    o.header.msg_type = 'pyin'
    o.content = {
       code = msg.content.code,
-      execution_count = exec_count[msg.header.session]
+      execution_count = s.exec_count
    }
    ipyEncodeAndSend(iopub, o);
 
    if ok then 
       -- pyout -- iopub
-      if not msg.content.silent  and output then
+      if not msg.content.silent  and output and output ~= '' then
 	 o.header.msg_id = uuid.new()
 	 o.header.msg_type = 'pyout'
 	 o.content = {
 	    data = {},
 	    metadata = {},
-	    execution_count = exec_count[msg.header.session]
+	    execution_count = s.exec_count
 	 }
 	 o.content.data['text/plain'] = output
 	 ipyEncodeAndSend(iopub, o);
@@ -216,7 +212,7 @@ shell_router.execute_request = function (sock, msg)
       o.header.msg_type = 'execute_reply'
       o.content = {
 	 status = 'ok',
-	 execution_count = exec_count[msg.header.session],
+	 execution_count = s.exec_count,
 	 payload = {},
 	 user_variables = {},
 	 user_expressions = {}
@@ -227,10 +223,10 @@ shell_router.execute_request = function (sock, msg)
       o.header.msg_id = uuid.new()
       o.header.msg_type = 'pyerr'
       o.content = {
-	 execution_count = exec_count[msg.header.session],
+	 execution_count = s.exec_count,
 	 ename = result or 'Unknown Error',
 	 evalue = result.code or '',
-	 traceback = {result}
+	 traceback = {error}
       }
       ipyEncodeAndSend(iopub, o);
       -- execute_reply -- shell
@@ -238,10 +234,10 @@ shell_router.execute_request = function (sock, msg)
       o.header.msg_type = 'execute_reply'
       o.content = {
 	 status = 'error',
-	 execution_count = exec_count[msg.header.session],
+	 execution_count = s.exec_count,
 	 ename = result or 'Unknown Error',
 	 evalue = result.code or '',
-	 traceback = {result}
+	 traceback = {error}
       }
       ipyEncodeAndSend(sock, o);
    end
