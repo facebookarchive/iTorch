@@ -178,9 +178,11 @@ stdo:close()
 shell_router.execute_request = function (sock, msg)
    iopub_router.status(iopub, msg, 'busy');
    local s = session[msg.header.session] or session:create(msg.header.session)
-   local ok, result, output
-   do
-      ok, result = xpcall(function() loadstring(msg.content.code)() end, traceback);
+   local pok, perr, ok, err, output
+   local func, perr = loadstring('local f = function() return '..msg.content.code..' end; local res = {f()}; print(unpack(res))')
+   if func then
+      pok = true
+      ok,err = xpcall(func, traceback)
       local stdo = io.open(stdof, 'r')
       stdo:seek('set', pos_old)
       output = stdo:read("*all")
@@ -230,15 +232,15 @@ shell_router.execute_request = function (sock, msg)
 	 user_expressions = {}
       }
       ipyEncodeAndSend(sock, o);
-   else
+   elseif pok then -- means function execution had error
       -- pyerr -- iopub
       o.header.msg_id = uuid.new()
       o.header.msg_type = 'pyerr'
       o.content = {
 	 execution_count = s.exec_count,
-	 ename = result or 'Unknown Error',
-	 evalue = result.code or '',
-	 traceback = {result}
+	 ename = err or 'Unknown Error',
+	 evalue = '',
+	 traceback = {err}
       }
       ipyEncodeAndSend(iopub, o);
       -- execute_reply -- shell
@@ -247,9 +249,31 @@ shell_router.execute_request = function (sock, msg)
       o.content = {
 	 status = 'error',
 	 execution_count = s.exec_count,
-	 ename = result or 'Unknown Error',
-	 evalue = result.code or '',
-	 traceback = {result}
+	 ename = err or 'Unknown Error',
+	 evalue = '',
+	 traceback = {err}
+      }
+      ipyEncodeAndSend(sock, o);
+   else -- code has syntax error
+      -- pyerr -- iopub
+      o.header.msg_id = uuid.new()
+      o.header.msg_type = 'pyerr'
+      o.content = {
+	 execution_count = s.exec_count,
+	 ename = err or 'Unknown Error',
+	 evalue = '',
+	 traceback = {perr}
+      }
+      ipyEncodeAndSend(iopub, o);
+      -- execute_reply -- shell
+      o.header.msg_id = uuid.new()
+      o.header.msg_type = 'execute_reply'
+      o.content = {
+	 status = 'error',
+	 execution_count = s.exec_count,
+	 ename = err or 'Unknown Error',
+	 evalue = '',
+	 traceback = {perr}
       }
       ipyEncodeAndSend(sock, o);
    end
