@@ -314,8 +314,11 @@ local function extract_completions(text, line, block, pos)
    if h then 
       if p == #lb then
 	 word = ''
+	 prefix = l
       else
 	 word = l:sub(p+1);
+	 prefix = l:sub(1,p)
+	 --[[
 	 if l:sub(p,p) == '.' then
 	    lb = lb:sub(1,p-1)
 	    local h2,p2 = lb:find('.*%.')
@@ -325,6 +328,7 @@ local function extract_completions(text, line, block, pos)
 	       prefix = l:sub(1,p)
 	    end
 	 end
+	 ]]--
       end
    end
    local matches = completer.complete(word, l, nil, nil)
