@@ -178,8 +178,21 @@ stdo:close()
 shell_router.execute_request = function (sock, msg)
    iopub_router.status(iopub, msg, 'busy');
    local s = session[msg.header.session] or session:create(msg.header.session)
-   local pok, perr, ok, err, output
-   local func, perr = loadstring('local f = function() return '..msg.content.code..' end; local res = {f()}; print(unpack(res))')
+   local line = msg.content.code
+   -- help
+   if line and line:find('^%s-?') then
+      local pkg = line:gsub('^%s-?','')
+      line = 'help(' .. pkg .. ')'
+   end
+   local cmd = line .. '\n'
+   if cmd:sub(1,1) == "=" then cmd = "return "..cmd:sub(2) end
+
+   local pok, func, perr, ok, err, output
+   if line:find(';%s-$') or line:find('^%s-print') then
+      func, perr = loadstring(cmd)
+   else
+      func, perr = loadstring('local f = function() return '.. line ..' end; local res = {f()}; print(unpack(res))')
+   end
    if func then
       pok = true
       ok,err = xpcall(func, traceback)
@@ -188,6 +201,9 @@ shell_router.execute_request = function (sock, msg)
       output = stdo:read("*all")
       pos_old = stdo:seek('end')
       stdo:close()
+   else
+      ok = false;
+      err = perr;
    end
 
    local o = {}
