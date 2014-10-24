@@ -301,13 +301,32 @@ shell_router.history_request = function (sock, msg)
 end
 
 local function extract_completions(text, line, block, pos)
-   -- word_break_characters = " \t\n\"\\'><=;:+-*/%^~#{}()[].,";
-   local words = line:split('.');
-   local word = words[#words]; words[#words] = nil; words = stringx.join('.', words)
-   if words ~= '' then  words = words .. '.' end
-   local matches = completer.complete(word, line, pos, nil)
-   for k,v in ipairs(matches) do
-      matches[k] = words .. matches[k]
+   local l = line:sub(1, pos)
+   local word_break_characters = '[" \t\n\"\\\'><=;:%+%-%*/%%^~#{}%(%)%[%],"]'
+   local lb = l:gsub(word_break_characters, '.')
+   -- extract word
+   local word = l
+   local prefix = ''
+   local h,p = lb:find('.*%.')
+   if h then 
+      if p == #lb then
+	 word = ''
+      else
+	 word = l:sub(p+1);
+	 if l:sub(p,p) == '.' then
+	    lb = lb:sub(1,p-1)
+	    local h2,p2 = lb:find('.*%.')
+	    if h2 then
+	       prefix = l:sub(p2+1,p)
+	    else
+	       prefix = l:sub(1,p)
+	    end
+	 end
+      end
+   end
+   local matches = completer.complete(word, l, nil, nil)
+   for i=1,#matches do
+      matches[i] = prefix .. matches[i]
    end
    return {
       matches = matches,
