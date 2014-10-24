@@ -304,7 +304,8 @@ shell_router.history_request = function (sock, msg)
 end
 
 local function extract_completions(text, line, block, pos)
-   local l = line:sub(1, pos)
+   -- TODO: if text is empty, go check line for the last word-break character (notebook)
+   local l = text
    local word_break_characters = '[" \t\n\"\\\'><=;:%+%-%*/%%^~#{}%(%)%[%],"]'
    local lb = l:gsub(word_break_characters, '.')
    -- extract word
@@ -318,17 +319,6 @@ local function extract_completions(text, line, block, pos)
       else
 	 word = l:sub(p+1);
 	 prefix = l:sub(1,p)
-	 --[[
-	 if l:sub(p,p) == '.' then
-	    lb = lb:sub(1,p-1)
-	    local h2,p2 = lb:find('.*%.')
-	    if h2 then
-	       prefix = l:sub(p2+1,p)
-	    else
-	       prefix = l:sub(1,p)
-	    end
-	 end
-	 ]]--
       end
    end
    local matches = completer.complete(word, l, nil, nil)
@@ -337,7 +327,7 @@ local function extract_completions(text, line, block, pos)
    end
    return {
       matches = matches,
-      matched_text = line, -- e.g. torch.<TAB> should become torch.abs
+      matched_text = prefix, -- line, -- e.g. torch.<TAB> should become torch.abs
       status = 'ok'
    }
 end
