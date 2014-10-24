@@ -192,6 +192,9 @@ shell_router.execute_request = function (sock, msg)
       func, perr = loadstring(cmd)
    else
       func, perr = loadstring('local f = function() return '.. line ..' end; local res = {f()}; print(unpack(res))')
+      if not func then
+	 func, perr = loadstring(cmd)
+      end
    end
    if func then
       pok = true
