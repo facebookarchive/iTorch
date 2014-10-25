@@ -18,7 +18,8 @@ dependencies = {
    "trepl",
    "penlight",
    "lua-cjson",
-   "uuid"
+   "uuid",
+   "lbase64"   
    -- "lzmq == scm"
 }
 
