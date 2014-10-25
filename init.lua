@@ -303,31 +303,43 @@ shell_router.history_request = function (sock, msg)
    print('WARNING: history_request not handled yet');
 end
 
+local word_break_characters = '[" \t\n\"\\\'><=;:%+%-%*/%%^~#{}%(%)%[%],"]'
+
 local function extract_completions(text, line, block, pos)
-   -- TODO: if text is empty, go check line for the last word-break character (notebook)
-   local l = text
-   local word_break_characters = '[" \t\n\"\\\'><=;:%+%-%*/%%^~#{}%(%)%[%],"]'
-   local lb = l:gsub(word_break_characters, '.')
-   -- extract word
-   local word = l
-   local prefix = ''
-   local h,p = lb:find('.*%.')
-   if h then 
-      if p == #lb then
-	 word = ''
-	 prefix = l
+   local matches, word
+   do -- get matches
+      local c_word, c_line
+      local lb = line:gsub(word_break_characters, '*')
+      local h,p = lb:find('.*%*')
+      if h then
+	 c_line = line:sub(p+1)
       else
-	 word = l:sub(p+1);
-	 prefix = l:sub(1,p)
+	 c_line = line
+      end      
+      local h,p = c_line:find('.*%.')
+      if h then
+	 c_word = c_line:sub(p+1)
+      else
+	 c_word = c_line;
+	 c_line = ''
       end
+      matches = completer.complete(c_word, c_line, nil, nil)
+      word = c_word
    end
-   local matches = completer.complete(word, l, nil, nil)
+   -- now that we got correct matches, create the proper matched_text
    for i=1,#matches do
-      matches[i] = prefix .. matches[i]
+      if text ~= '' then
+	 local r,p = text:find('.*' .. word)
+	 local t2 = ''
+	 if r then
+	    t2 = text:sub(1,p-#word)
+	 end
+	 matches[i] = t2 .. matches[i];
+      end
    end
    return {
       matches = matches,
-      matched_text = prefix, -- line, -- e.g. torch.<TAB> should become torch.abs
+      matched_text = word, -- line, -- e.g. torch.<TAB> should become torch.abs
       status = 'ok'
    }
 end
