@@ -5,8 +5,6 @@ local zassert = zmq.assert
 local json=require 'cjson'
 local uuid = require 'uuid'
 local tablex = require 'pl.tablex'
-local stringx = require 'pl.stringx'
-stringx.import()
 local completer = require 'trepl.completer'
 require 'paths'
 require 'dok'
