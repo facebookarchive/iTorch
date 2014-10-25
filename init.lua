@@ -304,6 +304,7 @@ end
 local word_break_characters = '[" \t\n\"\\\'><=;:%+%-%*/%%^~#{}%(%)%[%],"]'
 
 local function extract_completions(text, line, block, pos)
+   line = line:sub(1,pos)
    local matches, word
    do -- get matches
       local c_word, c_line
