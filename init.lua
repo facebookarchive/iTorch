@@ -1,4 +1,5 @@
 require 'env' -- TODO: remove
+local itorch = require 'itorch.env'
 local zmq = require 'lzmq'
 local zloop = require 'lzmq.loop'
 local zassert = zmq.assert
@@ -43,7 +44,7 @@ local stdin, err     = context:socket{zmq.ROUTER, bind = ip .. ipycfg.stdin_port
 zassert(stdin, err)
 local iopub, err     = context:socket{zmq.PUB,    bind = ip .. ipycfg.iopub_port}
 zassert(iopub, err)
-igfx.iopub = iopub -- for the display functions to have access
+itorch.iopub = iopub -- for the display functions to have access
 --------------------------------------------------------------
 -- Common decoder function for all messages (except heartbeats which are just looped back)
 local function ipyDecode(sock)
@@ -83,7 +84,7 @@ local function ipyEncodeAndSend(sock, m)
    -- print(o)
    zassert(sock:send_all(o))
 end
-igfx.ipyEncodeAndSend = ipyEncodeAndSend
+itorch.ipyEncodeAndSend = ipyEncodeAndSend
 ---------------------------------------------------------------------------
 -- IOPub router
 local iopub_router = {}
@@ -177,7 +178,7 @@ local stdo = io.open(stdof, 'r')
 local pos_old = stdo:seek('end')
 stdo:close()
 shell_router.execute_request = function (sock, msg)
-   igfx.msg = msg
+   itorch.msg = msg
    iopub_router.status(iopub, msg, 'busy');
    local s = session[msg.header.session] or session:create(msg.header.session)
    local line = msg.content.code

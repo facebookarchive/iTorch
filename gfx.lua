@@ -4,13 +4,14 @@ local uuid = require 'uuid'
 local json = require 'cjson'
 local base64 = require 'base64'
 local tablex = require 'pl.tablex'
+local itorch = require 'itorch.env'
 
 require 'image'
 
 -- Example: require 'image';igfx.image(image.scale(image.lena(),16,16))
 function igfx.image(img)
-   assert(igfx.iopub,'igfx.iopub socket not set')
-   assert(igfx.msg,'igfx.msg not set')
+   assert(itorch.iopub,'igfx.iopub socket not set')
+   assert(itorch.msg,'igfx.msg not set')
    if torch.typename(img) == 'string' then -- assume that it is path
       img = image.load(img)
    end
@@ -36,18 +37,18 @@ function igfx.image(img)
       content.data['image/png'] = base64.encode(ffi.string(torch.data(buf), size))
       content.metadata = { }
       content.metadata['image/png'] = {width = imgDisplay:size(2), height = imgDisplay:size(3)}
-      local header = tablex.deepcopy(igfx.msg.header)
+      local header = tablex.deepcopy(itorch.msg.header)
       header.msg_id = uuid.new()
       header.msg_type = 'display_data'
 
       -- send displayData
       local m = { 
-	 uuid = igfx.msg.uuid, 
+	 uuid = itorch.msg.uuid, 
 	 content = content,
-	 parent_header = igfx.msg.header,
+	 parent_header = itorch.msg.header,
 	 header = header
       }
-      igfx.ipyEncodeAndSend(igfx.iopub, m)
+      itorch.ipyEncodeAndSend(itorch.iopub, m)
    else
       error('unhandled type in igfx.image:' .. torch.type(img))
    end
