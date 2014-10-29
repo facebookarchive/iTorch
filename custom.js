@@ -10,7 +10,6 @@ $([IPython.events]).on('notebook_loaded.Notebook', function(){
     }
 });
 $([IPython.events]).on("app_initialized.NotebookApp", function () {
-    console.log('here');
     IPython.CodeCell.options_default['cm_config']['mode'] = 'lua';
 
     CodeMirror.requireMode('lua', function(){
