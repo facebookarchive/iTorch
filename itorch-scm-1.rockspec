@@ -19,7 +19,8 @@ dependencies = {
    "penlight",
    "lua-cjson",
    "uuid",
-   "lbase64"   
+   "lbase64",
+   "env"
    -- "lzmq == scm"
 }
 

@@ -61,65 +61,11 @@ end
 local bokeh_template = [[
 <link rel="stylesheet" href="http://cdn.pydata.org/bokeh-0.6.1.min.css" type="text/css" />
 <script type="text/javascript">
-    $.getScript("http://cdn.pydata.org/bokeh-0.6.1.min.js", function() {
-  var N, d, data, i, image, j, linspace, options, plot, xs, _i, _j, _ref, _ref1;
-
-  linspace = function(d1, d2, n) {
-    var L, j, tmp1, tmp2;
-    j = 0;
-    L = new Array();
-    while (j <= (n - 1)) {
-      tmp1 = j * (d2 - d1) / (Math.floor(n) - 1);
-      tmp2 = Math.ceil((d1 + tmp1) * 10000) / 10000;
-      L.push(tmp2);
-      j = j + 1;
-    }
-    return L;
-  };
-
-  N = 600;
-
-  d = new Array(N);
-
-  xs = linspace(0, 10, N);
-
-  for (i = _i = 0, _ref = N - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; i = 0 <= _ref ? ++_i : --_i) {
-    for (j = _j = 0, _ref1 = N - 1; 0 <= _ref1 ? _j <= _ref1 : _j >= _ref1; j = 0 <= _ref1 ? ++_j : --_j) {
-      if (j === 0) {
-        d[i] = new Array(N);
-      }
-      d[i][j] = Math.sin(xs[i]) * Math.cos(xs[j]);
-    }
-  }
-
-  data = {
-    image: [d]
-  };
-
-  image = {
-    type: 'image',
-    x: 0,
-    y: 0,
-    dw: 10,
-    dw_units: 'data',
-    dh: 10,
-    dh_units: 'data',
-    image: 'image',
-    palette: 'Spectral-10'
-  };
-
-  options = {
-    title: "Image Demo",
-    dims: [600, 600],
-    xrange: [0, 10],
-    yrange: [0, 10],
-    xaxes: "below",
-    yaxes: "left",
-    tools: "pan,wheel_zoom,box_zoom,resize,preview",
-    legend: false
-  };
-
-  plot = Bokeh.Plotting.make_plot(image, data, options);
+$.getScript("http://cdn.pydata.org/bokeh-0.6.1.min.js", function() {
+  var g = ${glyph}
+  var d = ${data}
+  var o = ${options}
+  var plot = Bokeh.Plotting.make_plot(g,d,o);
   Bokeh.Plotting.show(plot,"#${div_id}");
     });
 </script>
@@ -128,7 +74,7 @@ local bokeh_template = [[
 
 require 'pl.text'.format_operator()
 
-function igfx.plot()
+function igfx.plot(glyph, data, options)
    assert(itorch.iopub,'igfx.iopub socket not set')
    assert(itorch.msg,'igfx.msg not set')
    local content = {}
@@ -137,6 +83,9 @@ function igfx.plot()
    content.data['text/html'] = 
       bokeh_template % {
 	 div_id = uuid.new(),
+         glyph = json.encode(glyph),
+	 data = json.encode(data),
+	 options = json.encode(options)
 	};
    print(content.data['text/html'])
    content.metadata = {}
@@ -152,6 +101,46 @@ function igfx.plot()
       header = header
    }
    itorch.ipyEncodeAndSend(itorch.iopub, m)
+end
+
+function igfx.testplot()
+   -- glyph
+   local glyph = {
+      type = 'circle',
+      x = 'x',
+      y = 'y',
+      radius = 0.3,
+      radius_units = 'data',
+      fill_color = 'red',
+      fill_alpha = 0.6,
+      line_color = nil
+   }
+
+   -- data
+   local x = {} -- torch.randn(4000):mul(100)
+   local y = {} -- torch.randn(4000):mul(100)
+   for i=1,1000 do
+      x[i] = math.random() * 100
+      y[i] = math.random() * 100
+   end
+   data = {
+      x = x,
+      y = y
+   }
+
+   -- options
+   options = {
+      title = "Scatter Demo",
+      dims = {600, 600},
+      xrange = {0, 100},
+      yrange = {0, 100},
+      xaxes = "below",
+      yaxes = "left",
+      tools = true,
+      legend =  false
+   }
+   -- plot
+   igfx.plot(glyph, data, options)   
 end
 
 return igfx;
