@@ -7,7 +7,7 @@ local json=require 'cjson'
 local uuid = require 'uuid'
 local tablex = require 'pl.tablex'
 local completer = require 'trepl.completer'
-igfx = require 'itorch.gfx'
+ifx = require 'itorch.gfx'
 require 'paths'
 require 'dok'
 local luajit_path = arg[2]
