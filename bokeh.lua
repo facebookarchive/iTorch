@@ -26,9 +26,15 @@ $.getScript("http://cdn.pydata.org/bokeh-0.6.1.min.js", function() {
 ]]
 
 -- Bokeh.Plotting.make_plot = (glyphspecs, data, {nonselected, title, dims, xrange, yrange, xaxes, yaxes, xgrid, ygrid, xdr, ydr, tools, legend})
-function ifx.plot(data, glyphspecs, options, window_id)
+function ifx.show(plot, window_id)
+   assert(type(plot) == 'table' and plot.glyph and plot.data and plot.options, 
+	  "argument 1 is not a plot object")
    assert(itorch.iopub,'ifx.iopub socket not set')
    assert(itorch.msg,'ifx.msg not set')
+   local data = plot.data
+   local glyph = plot.glyph
+   local options = plot.options
+   
    local div_id = uuid.new()
    local window_id = window_id or div_id
    local content = {}
@@ -38,7 +44,7 @@ function ifx.plot(data, glyphspecs, options, window_id)
       bokeh_template % {
 	 window_id = window_id,
 	 div_id = div_id,
-         glyphspecs = json.encode(glyphspecs),
+         glyphspecs = json.encode(glyph),
 	 data = json.encode(data),
 	 options = json.encode(options)
 	};
