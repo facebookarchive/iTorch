@@ -26,14 +26,14 @@ $.getScript("http://cdn.pydata.org/bokeh-0.6.1.min.js", function() {
 ]]
 
 -- Bokeh.Plotting.make_plot = (glyphspecs, data, {nonselected, title, dims, xrange, yrange, xaxes, yaxes, xgrid, ygrid, xdr, ydr, tools, legend})
-function ifx.show(plot, window_id)
+function ifx.draw(plot, window_id)
    assert(type(plot) == 'table' and plot.glyph and plot.data and plot.options, 
 	  "argument 1 is not a plot object")
    assert(itorch.iopub,'ifx.iopub socket not set')
    assert(itorch.msg,'ifx.msg not set')
-   local data = plot.data
-   local glyph = plot.glyph
-   local options = plot.options
+   local data = plot:data()
+   local glyph = plot:glyph()
+   local options = plot:options()
    
    local div_id = uuid.new()
    local window_id = window_id or div_id
@@ -66,10 +66,6 @@ end
 
 -- 2D charts
 -- scatter
-function ifx.scatter(data, options, window_id)
-   
-end
-
 -- bar (grouped and stacked)
 -- pie
 -- histogram
@@ -104,41 +100,15 @@ end
 -- view videos
 -- 
 
+-- grid plots http://nbviewer.ipython.org/github/ContinuumIO/bokeh-notebooks/blob/master/quickstart/quickstart.ipynb
+
 function ifx.testplot(window_id)
    -- data
-   local x = torch.randn(4000):mul(100):storage():totable()
-   local y = torch.randn(4000):mul(100):storage():totable()
-   data = {
-      x = x,
-      y = y
-   }
-
-   -- glyph
-   local glyph = {
-      type = 'circle',
-      x = 'x',
-      y = 'y',
-      radius = 0.3,
-      radius_units = 'data',
-      fill_color = 'red',
-      fill_alpha = 0.6,
-      line_color = nil
-   }
-   if window_id then glyph.fill_color = 'yellow' end
-
-   -- options
-   options = {
-      title = 'Scatter Demo',
-      dims = {600, 600},
-      xrange = {0, 100},
-      yrange = {0, 100},
-      xaxes = "below",
-      yaxes = "left",
-      tools = true,
-      legend =  false
-   }
+   local d = torch.randn(4000,2):mul(100)
+   local plot = itorch.Plot(d)
+   
    -- plot
-   return ifx.plot(data, glyph, options, window_id)
+   return ifx.draw(plot, window_id)
 end
 
 return ifx;

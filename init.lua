@@ -1,5 +1,5 @@
 require 'env' -- TODO: remove
-local itorch = require 'itorch.env'
+itorch = require 'itorch.env'
 local zmq = require 'lzmq'
 local zloop = require 'lzmq.loop'
 local zassert = zmq.assert
@@ -8,6 +8,7 @@ local uuid = require 'uuid'
 local tablex = require 'pl.tablex'
 local completer = require 'trepl.completer'
 ifx = require 'itorch.gfx'
+itorch.Plot = require 'itorch.Plot'
 require 'paths'
 require 'dok'
 local luajit_path = arg[2]

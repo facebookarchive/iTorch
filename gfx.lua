@@ -15,7 +15,7 @@ function ifx.image(img)
    assert(itorch.iopub,'ifx.iopub socket not set')
    assert(itorch.msg,'ifx.msg not set')
    if torch.typename(img) == 'string' then -- assume that it is path
-      img = image.load(img)
+      img = image.load(img) -- TODO: revamp this to just directly load the blob, infer file prefix, and send.
    end
    if torch.isTensor(img) or torch.type(img) == 'table' then
       local imgDisplay = image.toDisplayTensor(img)
