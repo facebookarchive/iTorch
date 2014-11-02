@@ -11,9 +11,8 @@ itorch.ifx = itorch.ifx or {}
 local ifx = itorch.ifx
 
 local bokeh_template = [[
-<link rel="stylesheet" href="http://cdn.pydata.org/bokeh-0.6.1.min.css" type="text/css" />
 <script type="text/javascript">
-$.getScript("http://cdn.pydata.org/bokeh-0.6.1.min.js", function() {
+$(function() {
   var g = ${glyphspecs}
   var d = ${data}
   var o = ${options}
@@ -102,13 +101,8 @@ end
 
 -- grid plots http://nbviewer.ipython.org/github/ContinuumIO/bokeh-notebooks/blob/master/quickstart/quickstart.ipynb
 
-function ifx.testplot(window_id)
-   -- data
-   local d = torch.randn(4000,2):mul(100)
-   local plot = itorch.Plot(d)
-   
-   -- plot
-   return ifx.draw(plot, window_id)
+function ifx.demo(window_id)
+   require 'itorch.test'
 end
 
 return ifx;
