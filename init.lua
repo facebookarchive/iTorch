@@ -202,6 +202,7 @@ shell_router.execute_request = function (sock, msg)
    end
    if func then
       pok = true
+      -- TODO: for lua outputs to be streamed from the executing command (for example a long for-loop), redefine 'print' to stream-out pyout messages
       ok,err = xpcall(func, traceback)
       local stdo = io.open(stdof, 'r')
       stdo:seek('set', pos_old)
