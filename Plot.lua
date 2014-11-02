@@ -2,9 +2,7 @@ local itorch = require 'itorch.env'
 local ifx = itorch.ifx
 local tablex = require 'pl.tablex'
 
-local Plot = {
-   name = 'itorch.Plot'
-}
+local Plot = {}
 
 setmetatable(Plot, {
 		__call = function(self,...)
@@ -44,7 +42,7 @@ function Plot.new(data, glyph, options)
    plot:options(options)
    
    -- set range automatically to [min, max]
-   if not (plot:options().xrange and plot:options().yrange) then
+   if data and not (plot:options().xrange and plot:options().yrange) then
       plot:autoRange()
    end
    
@@ -73,6 +71,7 @@ x:data(torch.randn(10,2))
 	    assert(#d[1] == #d[2], 'x and y vectors are not the same size: ' .. #d[1] .. ',' .. #d[2])
 	    self._data = { x = d[1], y = d[2] }
 	 elseif type(d[1] == 'number') then
+	    if #d == 0 then error(help) end
 	    local x = torch.linspace(1,#d):storage():totable()
 	    self._data = { x = x, y = d }
 	 else
@@ -147,6 +146,7 @@ end
 
 -- set range automatically to [min, max]
 function Plot:autoRange()
+   assert(self.data, 'data not yet set in the plot')
    local xt = torch.Tensor(self._data.x)
    local xrange = {xt:min(), xt:max()}
 
