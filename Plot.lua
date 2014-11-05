@@ -10,43 +10,28 @@ setmetatable(Plot, {
 		end
 });
 
+-- https://github.com/bokeh/Bokeh.jl/blob/master/doc/other/simplest_bokeh_plot.html
+
 -- constructor
-function Plot.new(data, glyph, options)
+function Plot.new()
    local plot = {}
    for k,v in pairs(Plot) do plot[k] = v end
-
-   plot:data(data);
-   if not glyph then
-      -- defaults
-      glyph = {
-	 type = 'circle',
-	 x = 'x',
-	 y = 'y',
-	 radius = 0.3,
-	 radius_units = 'data',
-	 fill_color = 'red',
-	 fill_alpha = 0.6,
-	 line_color = nil
-      }
-   end
-   plot:glyph(glyph)
-
-   if not options then
-      options = {
-	 xaxes = "below",
-	 yaxes = "left",
-	 tools = true,
-	 legend =  false
-      }
-   end
-   plot:options(options)
+   plot.docid = uuid.new()
+   plot.allmodels = {}
    
-   -- set range automatically to [min, max]
-   if data and not (plot:options().xrange and plot:options().yrange) then
-      plot:autoRange()
-   end
+   plot:_addElement('PlotContext')
    
+
    return plot
+end
+
+function Plot:_addElement(typestr, children)
+   local m = {}
+   m.type = typestr
+   m.id = uuid.new()
+   m.attributes = {}
+   m.attributes.doc = self.docid
+   m.attributes.id = m.id
 end
 
 do

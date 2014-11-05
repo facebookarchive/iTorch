@@ -13,27 +13,36 @@ local ifx = itorch.ifx
 local bokeh_template = [[
 <script type="text/javascript">
 $(function() {
-  var g = ${glyphspecs}
-  var d = ${data}
-  var o = ${options}
+  var modelid = "${model_id}";
+  var modeltype = "PlotContext";
+  var all_models = {${all_models}};
+  Bokeh.load_models(all_models);
+  var model = Bokeh.Collections(modeltype).get(modelid);
   $("#${window_id}").html(''); // clear any previous plot in window_id
-  var plot = Bokeh.Plotting.make_plot(g,d,o);
-  Bokeh.Plotting.show(plot,"#${window_id}");
+  var view = new model.default_view({model: model, el: "#${window_id}"});
     });
 </script>
 <div class="plotdiv" id="${div_id}"></div>
 ]]
 
--- Bokeh.Plotting.make_plot = (glyphspecs, data, {nonselected, title, dims, xrange, yrange, xaxes, yaxes, xgrid, ygrid, xdr, ydr, tools, legend})
-function ifx.draw(plot, window_id)
-   assert(type(plot) == 'table' and plot.glyph and plot.data and plot.options, 
+-- model_id, all_models, window_id, div_id
+-- doc: https://github.com/bokeh/Bokeh.jl/blob/master/doc/other/bokeh_bindings.md
+function ifx.draw(allmodels, window_id)
+   assert(type(allmodels) == 'table' 
+	     and allmodels[1] and allmodels[1].id, 
 	  "argument 1 is not a plot object")
-   assert(itorch.iopub,'ifx.iopub socket not set')
-   assert(itorch.msg,'ifx.msg not set')
-   local data = plot:data()
-   local glyph = plot:glyph()
-   local options = plot:options()
-   
+   assert(itorch.iopub,'itorch.iopub socket not set')
+   assert(itorch.msg,'itorch.msg not set')
+
+   -- find model_id
+   local model_id
+   for k,v in ipairs(allmodels) do
+      if v.type == 'PlotContext' then
+	 model_id = v.id
+      end
+   end
+   assert(model_id, "Could not find PlotContext element in input Plot");
+
    local div_id = uuid.new()
    local window_id = window_id or div_id
    local content = {}
@@ -43,9 +52,8 @@ function ifx.draw(plot, window_id)
       bokeh_template % {
 	 window_id = window_id,
 	 div_id = div_id,
-         glyphspecs = json.encode(glyph),
-	 data = json.encode(data),
-	 options = json.encode(options)
+         all_models = json.encode(all_models),
+	 model_id = model_id
 	};
    content.metadata = {}
    local header = tablex.deepcopy(itorch.msg.header)
