@@ -20,7 +20,8 @@ dependencies = {
    "lua-cjson",
    "uuid",
    "lbase64",
-   "env"
+   "env",
+   "image"
    -- "lzmq == scm"
 }
 
