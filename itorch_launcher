@@ -6,4 +6,10 @@ istderr=$(mktemp -t itorch.stdout)
 echo $istdout
 echo $istderr
 script -q /dev/null $currdir/luajit -e "arg={'$1','$currdir/luajit','$istdout', '$istderr'}; require 'itorch'" >$istdout 2>$istderr
+errcode=$?
+if [ $errcode -ne 0 ]; then
+    echo "iTorch failed to initialize with error code: $errcode"
+    cat $istdout
+    cat $istderr
+fi
 rm -f $istdout $istderr
