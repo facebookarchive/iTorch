@@ -175,6 +175,9 @@ local function traceback(message)
 end
 
 
+io.stdout:setvbuf('no')
+io.stderr:setvbuf('no')
+
 local stdo = io.open(stdof, 'r')
 local pos_old = stdo:seek('end')
 stdo:close()
