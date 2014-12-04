@@ -1,7 +1,5 @@
-local ffi = require 'ffi'
 local uuid = require 'uuid'
 local json = require 'cjson'
-local base64 = require 'base64'
 local tablex = require 'pl.tablex'
 require 'pl.text'.format_operator()
 require 'image'
@@ -44,7 +42,7 @@ function ifx.draw(allmodels, window_id)
    assert(model_id, "Could not find PlotContext element in input Plot");
 
    local div_id = uuid.new()
-   local window_id = window_id or div_id
+   window_id = window_id or div_id
    local content = {}
    content.source = 'itorch'
    content.data = {}
@@ -52,7 +50,7 @@ function ifx.draw(allmodels, window_id)
       bokeh_template % {
          window_id = window_id,
          div_id = div_id,
-         all_models = json.encode(all_models),
+         all_models = json.encode(allmodels),
          model_id = model_id
                        };
    content.metadata = {}

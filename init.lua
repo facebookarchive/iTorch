@@ -11,9 +11,7 @@ ifx = require 'itorch.gfx'
 itorch.Plot = require 'itorch.Plot'
 require 'paths'
 require 'dok'
-local luajit_path = arg[2]
 local stdof = arg[3]
-local stdef = arg[4]
 local context = zmq.context()
 -----------------------------------------
 local session = {}
@@ -80,7 +78,7 @@ local function ipyEncodeAndSend(sock, m)
    if m.parent_header then o[#o+1] = json.encode(m.parent_header) else o[#o+1] = '{}' end
    if m.metadata then o[#o+1] = json.encode(m.metadata) else o[#o+1] = '{}' end
    if m.content then o[#o+1] = json.encode(m.content) else o[#o+1] = '{}' end
-   if m.blob then o[#o+1] = blob end
+   if m.blob then o[#o+1] = m.blob end
    -- print('outgoing:')
    -- print(o)
    zassert(sock:send_all(o))
