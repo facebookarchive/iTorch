@@ -62,13 +62,13 @@ local function ipyDecode(sock)
    assert(i ~= -1, 'Failed parsing till <IDS|MSG>')
    -- json decode
    for j=i+1,i+4 do if m[j] == '{}' then m[j] = nil; else m[j] = json.decode(m[j]); end; end
-   -- populate headers
-   o.header        = m[i+1]
-   o.parent_header = m[i+2]
-   o.metadata      = m[i+3]
-   o.content       = m[i+4]
-   for j=i+5,#m do o.blob = (o.blob or '') .. m[j] end -- process blobs
-   return o
+      -- populate headers
+      o.header        = m[i+1]
+      o.parent_header = m[i+2]
+      o.metadata      = m[i+3]
+      o.content       = m[i+4]
+      for j=i+5,#m do o.blob = (o.blob or '') .. m[j] end -- process blobs
+      return o
 end
 -- Common encoder function for all messages (except heartbeats which are just looped back)
 local function ipyEncodeAndSend(sock, m)
@@ -95,7 +95,7 @@ iopub_router.status = function(sock, m, state)
    local o = {}
    o.uuid = {'status'};
    if m then o.parent_header = m.header end
-   o.header = {};   
+   o.header = {};
    if m then o.header.session = m.header.session else o.header.session = '????'; end
    o.header.msg_id = uuid.new()
    o.header.msg_type = 'status';
@@ -200,7 +200,7 @@ shell_router.execute_request = function (sock, msg)
    else
       func, perr = loadstring('local f = function() return '.. line ..' end; local res = {f()}; print(unpack(res))')
       if not func then
-	 func, perr = loadstring(cmd)
+         func, perr = loadstring(cmd)
       end
    end
    if func then
@@ -222,7 +222,7 @@ shell_router.execute_request = function (sock, msg)
    o.parent_header = msg.header
    o.header = tablex.deepcopy(msg.header)
    if not msg.content.silent and msg.content.store_history then
-      s.exec_count = s.exec_count + 1; 
+      s.exec_count = s.exec_count + 1;
       table.insert(s.history.code, msg.content.code);
       table.insert(s.history.output, output);
    end
@@ -235,28 +235,28 @@ shell_router.execute_request = function (sock, msg)
    }
    ipyEncodeAndSend(iopub, o);
 
-   if ok then 
+   if ok then
       -- pyout -- iopub
       if not msg.content.silent  and output and output ~= '' then
-	 o.header.msg_id = uuid.new()
-	 o.header.msg_type = 'pyout'
-	 o.content = {
-	    data = {},
-	    metadata = {},
-	    execution_count = s.exec_count
-	 }
-	 o.content.data['text/plain'] = output
-	 ipyEncodeAndSend(iopub, o);
+         o.header.msg_id = uuid.new()
+         o.header.msg_type = 'pyout'
+         o.content = {
+            data = {},
+            metadata = {},
+            execution_count = s.exec_count
+         }
+         o.content.data['text/plain'] = output
+         ipyEncodeAndSend(iopub, o);
       end
       -- execute_reply -- shell
       o.header.msg_id = uuid.new()
       o.header.msg_type = 'execute_reply'
       o.content = {
-	 status = 'ok',
-	 execution_count = s.exec_count,
-	 payload = {},
-	 user_variables = {},
-	 user_expressions = {}
+         status = 'ok',
+         execution_count = s.exec_count,
+         payload = {},
+         user_variables = {},
+         user_expressions = {}
       }
       ipyEncodeAndSend(sock, o);
    elseif pok then -- means function execution had error
@@ -264,21 +264,21 @@ shell_router.execute_request = function (sock, msg)
       o.header.msg_id = uuid.new()
       o.header.msg_type = 'pyerr'
       o.content = {
-	 execution_count = s.exec_count,
-	 ename = err or 'Unknown Error',
-	 evalue = '',
-	 traceback = {err}
+         execution_count = s.exec_count,
+         ename = err or 'Unknown Error',
+         evalue = '',
+         traceback = {err}
       }
       ipyEncodeAndSend(iopub, o);
       -- execute_reply -- shell
       o.header.msg_id = uuid.new()
       o.header.msg_type = 'execute_reply'
       o.content = {
-	 status = 'error',
-	 execution_count = s.exec_count,
-	 ename = err or 'Unknown Error',
-	 evalue = '',
-	 traceback = {err}
+         status = 'error',
+         execution_count = s.exec_count,
+         ename = err or 'Unknown Error',
+         evalue = '',
+         traceback = {err}
       }
       ipyEncodeAndSend(sock, o);
    else -- code has syntax error
@@ -286,21 +286,21 @@ shell_router.execute_request = function (sock, msg)
       o.header.msg_id = uuid.new()
       o.header.msg_type = 'pyerr'
       o.content = {
-	 execution_count = s.exec_count,
-	 ename = err or 'Unknown Error',
-	 evalue = '',
-	 traceback = {perr}
+         execution_count = s.exec_count,
+         ename = err or 'Unknown Error',
+         evalue = '',
+         traceback = {perr}
       }
       ipyEncodeAndSend(iopub, o);
       -- execute_reply -- shell
       o.header.msg_id = uuid.new()
       o.header.msg_type = 'execute_reply'
       o.content = {
-	 status = 'error',
-	 execution_count = s.exec_count,
-	 ename = err or 'Unknown Error',
-	 evalue = '',
-	 traceback = {perr}
+         status = 'error',
+         execution_count = s.exec_count,
+         ename = err or 'Unknown Error',
+         evalue = '',
+         traceback = {perr}
       }
       ipyEncodeAndSend(sock, o);
    end
@@ -321,16 +321,16 @@ local function extract_completions(text, line, block, pos)
       local lb = line:gsub(word_break_characters, '*')
       local h,p = lb:find('.*%*')
       if h then
-	 c_line = line:sub(p+1)
+         c_line = line:sub(p+1)
       else
-	 c_line = line
-      end      
+         c_line = line
+      end
       local h,p = c_line:find('.*%.')
       if h then
-	 c_word = c_line:sub(p+1)
+         c_word = c_line:sub(p+1)
       else
-	 c_word = c_line;
-	 c_line = ''
+         c_word = c_line;
+         c_line = ''
       end
       matches = completer.complete(c_word, c_line, nil, nil)
       word = c_word
@@ -338,12 +338,12 @@ local function extract_completions(text, line, block, pos)
    -- now that we got correct matches, create the proper matched_text
    for i=1,#matches do
       if text ~= '' then
-	 local r,p = text:find('.*' .. word)
-	 local t2 = ''
-	 if r then
-	    t2 = text:sub(1,p-#word)
-	 end
-	 matches[i] = t2 .. matches[i];
+         local r,p = text:find('.*' .. word)
+         local t2 = ''
+         if r then
+            t2 = text:sub(1,p-#word)
+         end
+         matches[i] = t2 .. matches[i];
       end
    end
    return {
@@ -358,8 +358,8 @@ shell_router.complete_request = function(sock, msg)
    msg.header = tablex.deepcopy(msg.parent_header)
    msg.header.msg_type = 'complete_reply';
    msg.header.msg_id = uuid.new();
-   msg.content = extract_completions(msg.content.text, msg.content.line, 
-				     msg.content.block, msg.content.cursor_pos)
+   msg.content = extract_completions(msg.content.text, msg.content.line,
+                                     msg.content.block, msg.content.cursor_pos)
    ipyEncodeAndSend(sock, msg);
 end
 
@@ -403,14 +403,14 @@ end
 local function handleShell(sock)
    local msg = ipyDecode(sock)
    assert(shell_router[msg.header.msg_type],
-	  'Cannot find appropriate message handler for ' .. msg.header.msg_type)
+          'Cannot find appropriate message handler for ' .. msg.header.msg_type)
    return shell_router[msg.header.msg_type](sock, msg);
 end
 
 local function handleControl(sock)
    local msg = ipyDecode(sock);
    assert(shell_router[msg.header.msg_type],
-	  'Cannot find appropriate message handler for ' .. msg.header.msg_type)
+          'Cannot find appropriate message handler for ' .. msg.header.msg_type)
    return shell_router[msg.header.msg_type](sock, msg);
 end
 
@@ -423,7 +423,7 @@ end
 local function handleIOPub(sock)
    local msg = ipyDecode(sock);
    assert(iopub_router[msg.header.msg_type],
-	  'Cannot find appropriate message handler for ' .. msg.header.msg_type)
+          'Cannot find appropriate message handler for ' .. msg.header.msg_type)
    return iopub_router[msg.header.msg_type](sock, msg);
 end
 

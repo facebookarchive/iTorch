@@ -44,11 +44,11 @@ function ifx.image(img)
       header.msg_type = 'display_data'
 
       -- send displayData
-      local m = { 
-	 uuid = itorch.msg.uuid, 
-	 content = content,
-	 parent_header = itorch.msg.header,
-	 header = header
+      local m = {
+         uuid = itorch.msg.uuid,
+         content = content,
+         parent_header = itorch.msg.header,
+         header = header
       }
       itorch.ipyEncodeAndSend(itorch.iopub, m)
    else
