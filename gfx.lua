@@ -1,6 +1,5 @@
 local ffi = require 'ffi'
 local uuid = require 'uuid'
-local json = require 'cjson'
 local base64 = require 'base64'
 local tablex = require 'pl.tablex'
 require 'image'

@@ -1,7 +1,5 @@
-local itorch = require 'itorch.env'
-local ifx = itorch.ifx
 local tablex = require 'pl.tablex'
-
+local uuid = require 'uuid'
 local Plot = {}
 
 setmetatable(Plot, {
