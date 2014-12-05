@@ -31,10 +31,8 @@ local ipyjson = ipyfile:read("*all")
 ipyfile:close()
 local ipycfg = json.decode(ipyjson)
 --------------------------------------------------------------
--- bind 0MQ ports: Heartbeat (REP), Shell (ROUTER), Control (ROUTER), Stdin (ROUTER), IOPub (PUB)
+-- bind 0MQ ports: Shell (ROUTER), Control (ROUTER), Stdin (ROUTER), IOPub (PUB)
 local ip = ipycfg.transport .. '://' .. ipycfg.ip .. ':'
-local heartbeat, err = context:socket{zmq.REP,    bind = ip .. ipycfg.hb_port}
-zassert(heartbeat, err)
 local shell, err     = context:socket{zmq.ROUTER, bind = ip .. ipycfg.shell_port}
 zassert(shell, err)
 local control, err   = context:socket{zmq.ROUTER, bind = ip .. ipycfg.control_port}
@@ -154,7 +152,6 @@ shell_router.shutdown_request = function (sock, msg)
    ipyEncodeAndSend(sock, msg);
    iopub_router.status(sock, msg, 'idle');
    -- cleanup
-   heartbeat:close()
    shell:close()
    control:close()
    stdin:close()
@@ -394,11 +391,8 @@ shell_router.object_info_request = function(sock, msg)
 end
 
 ---------------------------------------------------------------------------
-local function handleHeartbeat(sock)
-   local m = zassert(sock:recv_all()); zassert(sock:send_all(m))
-end
-
 local function handleShell(sock)
+   print('here')
    local msg = ipyDecode(sock)
    assert(shell_router[msg.header.msg_type],
           'Cannot find appropriate message handler for ' .. msg.header.msg_type)
@@ -406,6 +400,7 @@ local function handleShell(sock)
 end
 
 local function handleControl(sock)
+   print('here')
    local msg = ipyDecode(sock);
    assert(shell_router[msg.header.msg_type],
           'Cannot find appropriate message handler for ' .. msg.header.msg_type)
@@ -419,6 +414,7 @@ local function handleStdin(sock)
 end
 
 local function handleIOPub(sock)
+   print('here')
    local msg = ipyDecode(sock);
    assert(iopub_router[msg.header.msg_type],
           'Cannot find appropriate message handler for ' .. msg.header.msg_type)
@@ -428,7 +424,6 @@ end
 iopub_router.status(iopub, nil, 'starting');
 
 loop = zloop.new(1, context)
-loop:add_socket(heartbeat, handleHeartbeat)
 loop:add_socket(shell, handleShell)
 loop:add_socket(control, handleControl)
 loop:add_socket(stdin, handleStdin)

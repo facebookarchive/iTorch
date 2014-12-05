@@ -6,7 +6,7 @@ istderr=$(mktemp -t itorch.stdout)
 echo $istdout
 echo $istderr
 # Start a separate process to handle in/out redirection (keep the pid aroudn with $! and make sure to kill it at the end)
-$currdir/luajit -e "arg={'$1','$currdir/luajit','$istdout', '$istderr'}; require 'itorch'" >$istdout 2>$istderr
+$currdir/luajit -e "arg={'$1','$currdir/luajit','$istdout', '$istderr'}; require 'itorch.main'" 2>&1 | ($currdir/luajit -e "arg={'$1','$currdir/luajit','$istdout', '$istderr'}; require 'itorch.IOHandler'") 
 errcode=$?
 if [ $errcode -ne 0 ]; then
     echo "iTorch failed to initialize with error code: $errcode"
