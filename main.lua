@@ -11,7 +11,6 @@ ifx = require 'itorch.gfx'
 itorch.Plot = require 'itorch.Plot'
 require 'paths'
 require 'dok'
-local stdof = arg[3]
 local context = zmq.context()
 -----------------------------------------
 local session = {}
@@ -30,6 +29,7 @@ local ipyfile = assert(io.open(arg[1], "rb"), "Could not open iPython config")
 local ipyjson = ipyfile:read("*all")
 ipyfile:close()
 local ipycfg = json.decode(ipyjson)
+local rawpub_port=arg[3]
 --------------------------------------------------------------
 -- bind 0MQ ports: Shell (ROUTER), Control (ROUTER), Stdin (ROUTER), IOPub (PUB)
 local ip = ipycfg.transport .. '://' .. ipycfg.ip .. ':'
@@ -39,7 +39,7 @@ local control, err   = context:socket{zmq.ROUTER, bind = ip .. ipycfg.control_po
 zassert(control, err)
 local stdin, err     = context:socket{zmq.ROUTER, bind = ip .. ipycfg.stdin_port}
 zassert(stdin, err)
-local iopub, err     = context:socket{zmq.PUB,    bind = ip .. ipycfg.iopub_port}
+local iopub, err     = context:socket{zmq.PUB,    bind = ip .. rawpub_port}
 zassert(iopub, err)
 itorch.iopub = iopub -- for the display functions to have access
 --------------------------------------------------------------
@@ -77,8 +77,8 @@ local function ipyEncodeAndSend(sock, m)
    if m.metadata then o[#o+1] = json.encode(m.metadata) else o[#o+1] = '{}' end
    if m.content then o[#o+1] = json.encode(m.content) else o[#o+1] = '{}' end
    if m.blob then o[#o+1] = m.blob end
-   -- print('outgoing:')
-   -- print(o)
+   print('outgoing:')
+   print(o)
    zassert(sock:send_all(o))
 end
 itorch.ipyEncodeAndSend = ipyEncodeAndSend
@@ -173,9 +173,6 @@ end
 io.stdout:setvbuf('no')
 io.stderr:setvbuf('no')
 
-local stdo = io.open(stdof, 'r')
-local pos_old = stdo:seek('end')
-stdo:close()
 shell_router.execute_request = function (sock, msg)
    itorch.msg = msg
    iopub_router.status(iopub, msg, 'busy');
@@ -191,8 +188,8 @@ shell_router.execute_request = function (sock, msg)
 
    local pok, func, perr, ok, err, output
    if line:find(';%s-$') or line:find('^%s-print') then
-      func, perr = loadstring(cmd)
-   else
+      func, perr = loadstring(cmd) -- syntax error (in semi-colon case)
+   else -- syntax error in (non-semicolon, so print out the result case)
       func, perr = loadstring('local f = function() return '.. line ..' end; local res = {f()}; print(unpack(res))')
       if not func then
          func, perr = loadstring(cmd)
@@ -202,11 +199,6 @@ shell_router.execute_request = function (sock, msg)
       pok = true
       -- TODO: for lua outputs to be streamed from the executing command (for example a long for-loop), redefine 'print' to stream-out pyout messages
       ok,err = xpcall(func, traceback)
-      local stdo = io.open(stdof, 'r')
-      stdo:seek('set', pos_old)
-      output = stdo:read("*all")
-      pos_old = stdo:seek('end')
-      stdo:close()
    else
       ok = false;
       err = perr;
@@ -361,38 +353,10 @@ end
 shell_router.object_info_request = function(sock, msg)
    -- print(msg)
    -- TODO: I dont understand when this thing is called and when it isn't
-   --[[
-   local c = msg.content
-   msg.parent_header = msg.header
-   msg.header = tablex.deepcopy(msg.parent_header)
-   msg.header.msg_type = 'object_info_reply';
-   msg.header.msg_id = uuid.new();
-   msg.content = {
-      name = c.oname,
-      found = true,
-      ismagic = false,
-      isalias = false,
-      namespace = '',
-      type_name = '',
-      string_form = help(c.oname),
-      base_class = '',
-      length = '',
-      file = '',
-      definition = '',
-      argspect = {},
-      init_definition = '',
-      docstring = '',
-      class_docstring = '',
-      call_docstring = '',
-      source = ''
-   }
-   ipyEncodeAndSend(sock, msg);
-   ]]--
 end
 
 ---------------------------------------------------------------------------
 local function handleShell(sock)
-   print('here')
    local msg = ipyDecode(sock)
    assert(shell_router[msg.header.msg_type],
           'Cannot find appropriate message handler for ' .. msg.header.msg_type)
@@ -400,7 +364,6 @@ local function handleShell(sock)
 end
 
 local function handleControl(sock)
-   print('here')
    local msg = ipyDecode(sock);
    assert(shell_router[msg.header.msg_type],
           'Cannot find appropriate message handler for ' .. msg.header.msg_type)
@@ -408,13 +371,11 @@ local function handleControl(sock)
 end
 
 local function handleStdin(sock)
-   print('stdin')
    local buffer = zassert(sock:recv_all())
    zassert(sock:send_all(buffer))
 end
 
 local function handleIOPub(sock)
-   print('here')
    local msg = ipyDecode(sock);
    assert(iopub_router[msg.header.msg_type],
           'Cannot find appropriate message handler for ' .. msg.header.msg_type)
