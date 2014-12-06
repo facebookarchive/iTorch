@@ -39,7 +39,7 @@ local control, err   = context:socket{zmq.ROUTER, bind = ip .. ipycfg.control_po
 zassert(control, err)
 local stdin, err     = context:socket{zmq.ROUTER, bind = ip .. ipycfg.stdin_port}
 zassert(stdin, err)
-local iopub, err     = context:socket{zmq.PUB,    bind = ip .. rawpub_port}
+local iopub, err     = context:socket{zmq.PUSH,    bind = ip .. rawpub_port}
 zassert(iopub, err)
 itorch.iopub = iopub -- for the display functions to have access
 --------------------------------------------------------------
@@ -77,8 +77,8 @@ local function ipyEncodeAndSend(sock, m)
    if m.metadata then o[#o+1] = json.encode(m.metadata) else o[#o+1] = '{}' end
    if m.content then o[#o+1] = json.encode(m.content) else o[#o+1] = '{}' end
    if m.blob then o[#o+1] = m.blob end
-   print('outgoing:')
-   print(o)
+   -- print('outgoing:')
+   -- print(o)
    zassert(sock:send_all(o))
 end
 itorch.ipyEncodeAndSend = ipyEncodeAndSend
@@ -223,7 +223,8 @@ shell_router.execute_request = function (sock, msg)
    ipyEncodeAndSend(iopub, o);
 
    if ok then
-      -- pyout -- iopub
+      -- pyout (Now handled by IOHandler.lua)
+      --[[
       if not msg.content.silent  and output and output ~= '' then
          o.header.msg_id = uuid.new()
          o.header.msg_type = 'pyout'
@@ -235,6 +236,8 @@ shell_router.execute_request = function (sock, msg)
          o.content.data['text/plain'] = output
          ipyEncodeAndSend(iopub, o);
       end
+      ]]--
+      
       -- execute_reply -- shell
       o.header.msg_id = uuid.new()
       o.header.msg_type = 'execute_reply'

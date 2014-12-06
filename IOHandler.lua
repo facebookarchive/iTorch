@@ -7,6 +7,8 @@ local uuid = require 'uuid'
 local ffi = require'ffi'
 local util = require 'itorch.util'
 local context = zmq.context()
+local tablex = require 'pl.tablex'
+local current_msg
 ------------------------------------------
 -- load and decode json config
 local ipyfile = assert(io.open(arg[1], "rb"), "Could not open iPython config")
@@ -32,7 +34,7 @@ local heartbeat, err = context:socket{zmq.REP,    bind = ip .. ipycfg.hb_port}
 zassert(heartbeat, err)
 local iopub, err = context:socket{zmq.PUB,    bind = ip .. ipycfg.iopub_port}
 zassert(iopub, err)
-local rawpub, err = context:socket{zmq.SUB,    connect = ip .. rawpub_port}
+local rawpub, err = context:socket{zmq.PULL,    connect = ip .. rawpub_port}
 zassert(rawpub, err)
 
 local function handleHeartbeat(sock)
@@ -43,7 +45,22 @@ end
 function handleSTDO(ev)
    local nbytes = ffi.C.read(io_stdo,buffer,chunk_size)
    if nbytes > 0 then
-      print(ffi.string(buffer, nbytes))
+      if current_msg then
+	 local output = ffi.string(buffer, nbytes)
+	 local o = {}
+	 o.uuid = current_msg.uuid
+	 o.parent_header = current_msg.header
+	 o.header = tablex.deepcopy(current_msg.header)
+	 o.header.msg_id = uuid.new()
+	 o.header.msg_type = 'pyout'
+	 o.content = {
+	    data = {},
+	    metadata = {},
+	    execution_count = 1
+	 }
+	 o.content.data['text/plain'] = output
+	 util.ipyEncodeAndSend(iopub, o)
+      end
    end
    ev:set_interval(1)
 end
@@ -57,15 +74,24 @@ function handleMSGID(ev)
 end
 
 function handleRawPub(sock)
-   print('rawpub')
-   local m = zassert(sock:recv_all());
-   print(m)
-   zassert(iopub:send_all(m))
+   local m = util.ipyDecode(sock)
+   current_msg = m
+   util.ipyEncodeAndSend(iopub, m)
 end
+
+local function handleIOPub(sock)
+   print('here duh!')
+   local msg = ipyDecode(sock);
+   assert(iopub_router[msg.header.msg_type],
+          'Cannot find appropriate message handler for ' .. msg.header.msg_type)
+   return iopub_router[msg.header.msg_type](sock, msg);
+end
+
 
 loop = zloop.new(1, context)
 loop:add_socket(heartbeat, handleHeartbeat)
 loop:add_socket(rawpub, handleRawPub)
+loop:add_socket(iopub, handleIOPub)
 loop:add_interval(1, handleSTDO)
 loop:add_interval(1, handleMSGID)
 loop:start()

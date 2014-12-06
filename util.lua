@@ -1,3 +1,8 @@
+local zmq = require 'lzmq'
+local zassert = zmq.assert
+local json=require 'cjson'
+local uuid = require 'uuid'
+
 local util = {}
 --------------------------------------------------------------
 -- Common decoder function for all messages (except heartbeats which are just looped back)
