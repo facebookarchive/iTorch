@@ -11,6 +11,7 @@ ifx = require 'itorch.gfx'
 itorch.Plot = require 'itorch.Plot'
 require 'paths'
 require 'dok'
+local util = require 'itorch.util'
 local context = zmq.context()
 -----------------------------------------
 local session = {}
@@ -51,46 +52,6 @@ do
 end
 itorch.iopub = iopub -- for the display functions to have access
 --------------------------------------------------------------
--- Common decoder function for all messages (except heartbeats which are just looped back)
-local function ipyDecode(sock)
-   local m = zassert(sock:recv_all())
-   -- print('incoming:')
-   -- print(m)
-   local o = {}
-   o.uuid = {}
-   local i = -1
-   for k,v in ipairs(m) do
-      if v == '<IDS|MSG>' then i = k+1; break; end
-      o.uuid[k] = v
-   end
-   assert(i ~= -1, 'Failed parsing till <IDS|MSG>')
-   -- json decode
-   for j=i+1,i+4 do if m[j] == '{}' then m[j] = nil; else m[j] = json.decode(m[j]); end; end
-      -- populate headers
-      o.header        = m[i+1]
-      o.parent_header = m[i+2]
-      o.metadata      = m[i+3]
-      o.content       = m[i+4]
-      for j=i+5,#m do o.blob = (o.blob or '') .. m[j] end -- process blobs
-      return o
-end
--- Common encoder function for all messages (except heartbeats which are just looped back)
-local function ipyEncodeAndSend(sock, m)
-   local o = {}
-   for k,v in ipairs(m.uuid) do o[#o+1] = v end
-   o[#o+1] = '<IDS|MSG>'
-   o[#o+1] = ''
-   o[#o+1] = json.encode(m.header)
-   if m.parent_header then o[#o+1] = json.encode(m.parent_header) else o[#o+1] = '{}' end
-   if m.metadata then o[#o+1] = json.encode(m.metadata) else o[#o+1] = '{}' end
-   if m.content then o[#o+1] = json.encode(m.content) else o[#o+1] = '{}' end
-   if m.blob then o[#o+1] = m.blob end
-   -- print('outgoing:')
-   -- print(o)
-   zassert(sock:send_all(o))
-end
-itorch.ipyEncodeAndSend = ipyEncodeAndSend
----------------------------------------------------------------------------
 -- IOPub router
 local iopub_router = {}
 -- http://ipython.org/ipython-doc/dev/development/messaging.html#kernel-status
@@ -105,7 +66,7 @@ iopub_router.status = function(sock, m, state)
    o.header.msg_type = 'status';
    o.header.username = 'torchkernel';
    o.content = { execution_state = state }
-   ipyEncodeAndSend(sock, o);
+   util.ipyEncodeAndSend(sock, o);
 end
 -- http://ipython.org/ipython-doc/dev/development/messaging.html#streams-stdout-stderr-etc
 iopub_router.stream = function(sock, m, stream, text)
@@ -121,7 +82,7 @@ iopub_router.stream = function(sock, m, stream, text)
       name = stream,
       data = text
    }
-   ipyEncodeAndSend(sock, o);
+   util.ipyEncodeAndSend(sock, o);
 end
 
 ---------------------------------------------------------------------------
@@ -133,7 +94,7 @@ shell_router.connect_request = function (sock, msg)
    msg.header.msg_type = 'connect_reply';
    msg.header.msg_id = uuid.new();
    msg.content = ipycfg;
-   ipyEncodeAndSend(sock, msg);
+   util.ipyEncodeAndSend(sock, msg);
 end
 
 shell_router.kernel_info_request = function (sock, msg)
@@ -147,7 +108,7 @@ shell_router.kernel_info_request = function (sock, msg)
       language_version = {jit.version_num},
       language = 'luajit'
    }
-   ipyEncodeAndSend(sock, msg);
+   util.ipyEncodeAndSend(sock, msg);
    iopub_router.status(sock, msg, 'idle');
 end
 
@@ -157,7 +118,7 @@ shell_router.shutdown_request = function (sock, msg)
    msg.header = tablex.deepcopy(msg.parent_header)
    msg.header.msg_type = 'shutdown_reply';
    msg.header.msg_id = uuid.new();
-   ipyEncodeAndSend(sock, msg);
+   util.ipyEncodeAndSend(sock, msg);
    iopub_router.status(sock, msg, 'idle');
    -- cleanup
    print('Shutting down main')
@@ -240,7 +201,7 @@ shell_router.execute_request = function (sock, msg)
       code = msg.content.code,
       execution_count = s.exec_count
    }
-   ipyEncodeAndSend(iopub, o);
+   util.ipyEncodeAndSend(iopub, o);
 
    if ok then
       -- pyout (Now handled by IOHandler.lua)
@@ -255,7 +216,7 @@ shell_router.execute_request = function (sock, msg)
          user_variables = {},
          user_expressions = {}
       }
-      ipyEncodeAndSend(sock, o);
+      util.ipyEncodeAndSend(sock, o);
    elseif pok then -- means function execution had error
       -- pyerr -- iopub
       o.header.msg_id = uuid.new()
@@ -266,7 +227,7 @@ shell_router.execute_request = function (sock, msg)
          evalue = '',
          traceback = {err}
       }
-      ipyEncodeAndSend(iopub, o);
+      util.ipyEncodeAndSend(iopub, o);
       -- execute_reply -- shell
       o.header.msg_id = uuid.new()
       o.header.msg_type = 'execute_reply'
@@ -277,7 +238,7 @@ shell_router.execute_request = function (sock, msg)
          evalue = '',
          traceback = {err}
       }
-      ipyEncodeAndSend(sock, o);
+      util.ipyEncodeAndSend(sock, o);
    else -- code has syntax error
       -- pyerr -- iopub
       o.header.msg_id = uuid.new()
@@ -288,7 +249,7 @@ shell_router.execute_request = function (sock, msg)
          evalue = '',
          traceback = {perr}
       }
-      ipyEncodeAndSend(iopub, o);
+      util.ipyEncodeAndSend(iopub, o);
       -- execute_reply -- shell
       o.header.msg_id = uuid.new()
       o.header.msg_type = 'execute_reply'
@@ -299,7 +260,7 @@ shell_router.execute_request = function (sock, msg)
          evalue = '',
          traceback = {perr}
       }
-      ipyEncodeAndSend(sock, o);
+      util.ipyEncodeAndSend(sock, o);
    end
    iopub_router.status(iopub, msg, 'idle');
 end
@@ -357,7 +318,7 @@ shell_router.complete_request = function(sock, msg)
    msg.header.msg_id = uuid.new();
    msg.content = extract_completions(msg.content.text, msg.content.line,
                                      msg.content.block, msg.content.cursor_pos)
-   ipyEncodeAndSend(sock, msg);
+   util.ipyEncodeAndSend(sock, msg);
 end
 
 shell_router.object_info_request = function(sock, msg)
@@ -367,14 +328,14 @@ end
 
 ---------------------------------------------------------------------------
 local function handleShell(sock)
-   local msg = ipyDecode(sock)
+   local msg = util.ipyDecode(sock)
    assert(shell_router[msg.header.msg_type],
           'Cannot find appropriate message handler for ' .. msg.header.msg_type)
    return shell_router[msg.header.msg_type](sock, msg);
 end
 
 local function handleControl(sock)
-   local msg = ipyDecode(sock);
+   local msg = util.ipyDecode(sock);
    assert(shell_router[msg.header.msg_type],
           'Cannot find appropriate message handler for ' .. msg.header.msg_type)
    return shell_router[msg.header.msg_type](sock, msg);
@@ -386,7 +347,7 @@ local function handleStdin(sock)
 end
 
 local function handleIOPub(sock)
-   local msg = ipyDecode(sock);
+   local msg = util.ipyDecode(sock);
    assert(iopub_router[msg.header.msg_type],
           'Cannot find appropriate message handler for ' .. msg.header.msg_type)
    return iopub_router[msg.header.msg_type](sock, msg);
@@ -400,4 +361,3 @@ loop:add_socket(control, handleControl)
 loop:add_socket(stdin, handleStdin)
 loop:add_socket(iopub, handleIOPub)
 loop:start()
-
