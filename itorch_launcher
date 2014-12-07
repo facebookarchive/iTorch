@@ -7,8 +7,9 @@ IO_STDO=$(mktemp -t itorch.stdout)
 rm $IO_STDO
 mkfifo $IO_STDO
 
-# Pipe for passing raw data to be rebroadcasted
-IO_RAWPUB_PORT=20000
-
-$currdir/luajit -e "arg={'$1','$IO_RAWPUB_PORT'};require 'itorch.main'" 2>&1 >$IO_STDO &
-$currdir/luajit -e "arg={'$1','$IO_STDO','$IO_RAWPUB_PORT'};require 'itorch.IOHandler'"
+# Process 1 writes the port number to communicate to this file
+# Process 2 reades from this file and binds to that port
+IO_PORTNUM=$(mktemp -t itorch.PORTNUM)
+echo $IO_PORTNUM
+$currdir/luajit -e "arg={'$1','$IO_PORTNUM'};require 'itorch.main'" 2>&1 >$IO_STDO &
+$currdir/luajit -e "arg={'$1','$IO_STDO','$IO_PORTNUM'};require 'itorch.IOHandler'"

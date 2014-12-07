@@ -15,7 +15,6 @@ local ipyfile = assert(io.open(arg[1], "rb"), "Could not open iPython config")
 local ipyjson = ipyfile:read("*all")
 ipyfile:close()
 local ipycfg = json.decode(ipyjson)
-local rawpub_port = arg[3]
 --------------------------------------------------------------
 --- The libc functions used by this process (for non-blocking IO)
 ffi.cdef[[
@@ -33,9 +32,20 @@ local heartbeat, err = context:socket{zmq.REP,    bind = ip .. ipycfg.hb_port}
 zassert(heartbeat, err)
 local iopub, err = context:socket{zmq.PUB,    bind = ip .. ipycfg.iopub_port}
 zassert(iopub, err)
+------------------------------------------------------------------------------
+local rawpub_port=0
+do
+   -- wait till the main process writes the port, and the use it
+   while rawpub_port == 0 do
+      local portnum_f = torch.DiskFile(arg[3],'r')
+      portnum_f:quiet()
+      rawpub_port = portnum_f:readInt()
+      portnum_f:close()
+   end
+end
 local rawpub, err = context:socket{zmq.PAIR,    connect = ip .. rawpub_port}
 zassert(rawpub, err)
-
+------------------------------------------------------------------------------
 local function handleHeartbeat(sock)
    local m = zassert(sock:recv_all());
    zassert(sock:send_all(m))

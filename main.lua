@@ -29,7 +29,6 @@ local ipyfile = assert(io.open(arg[1], "rb"), "Could not open iPython config")
 local ipyjson = ipyfile:read("*all")
 ipyfile:close()
 local ipycfg = json.decode(ipyjson)
-local rawpub_port=arg[2]
 --------------------------------------------------------------
 -- bind 0MQ ports: Shell (ROUTER), Control (ROUTER), Stdin (ROUTER), IOPub (PUB)
 local ip = ipycfg.transport .. '://' .. ipycfg.ip .. ':'
@@ -39,8 +38,17 @@ local control, err   = context:socket{zmq.ROUTER, bind = ip .. ipycfg.control_po
 zassert(control, err)
 local stdin, err     = context:socket{zmq.ROUTER, bind = ip .. ipycfg.stdin_port}
 zassert(stdin, err)
-local iopub, err     = context:socket{zmq.PAIR,    bind = ip .. rawpub_port}
+local iopub, err     = context:socket(zmq.PAIR)
 zassert(iopub, err)
+do
+   -- find a random open port between 10k and 65k with 1000 attempts.
+   local port, err = iopub:bind_to_random_port(ipycfg.transport .. '://' .. ipycfg.ip, 
+					       10000,65535,1000) 
+   zassert(port, err)
+   local portnum_f = torch.DiskFile(arg[2],'w')
+   portnum_f:writeInt(port)
+   portnum_f:close()
+end
 itorch.iopub = iopub -- for the display functions to have access
 --------------------------------------------------------------
 -- Common decoder function for all messages (except heartbeats which are just looped back)
