@@ -1,16 +1,17 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 currdir=`dirname $0`
 currdir=$(cd "$currdir" && pwd)
-istdout=$(mktemp -t itorch.stdout)
-istderr=$(mktemp -t itorch.stdout)
-echo $istdout
-echo $istderr
-# Start a separate process to handle in/out redirection (keep the pid aroudn with $! and make sure to kill it at the end)
-$currdir/luajit -e "arg={'$1','$currdir/luajit','$istdout', '$istderr'}; require 'itorch'" >$istdout 2>$istderr
-errcode=$?
-if [ $errcode -ne 0 ]; then
-    echo "iTorch failed to initialize with error code: $errcode"
-    cat $istdout
-    cat $istderr
-fi
-rm -f $istdout $istderr
+
+# Pipe for stdout
+IO_STDO=$(mktemp -t itorch.stdout)
+rm $IO_STDO
+mkfifo $IO_STDO
+
+# Process 1 writes the port number to communicate to this file
+# Process 2 reades from this file and binds to that port
+IO_PORTNUM=$(mktemp -t itorch.PORTNUM)
+echo $IO_PORTNUM
+$currdir/luajit -e "arg={'$1','$IO_PORTNUM'};require 'itorch.main'" 2>&1 >$IO_STDO &
+$currdir/luajit -e "arg={'$1','$IO_STDO','$IO_PORTNUM'};require 'itorch.IOHandler'"
+
+# temporary files $IO_STDO and $IO_PORTNUM are cleaned up on shutdown of itorch.IOHandler
