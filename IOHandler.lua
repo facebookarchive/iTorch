@@ -84,6 +84,17 @@ function handleRawPub(sock)
 	 kvstore[m[2]] = json.decode(m[3])
       elseif m[2] == 'exec_count' then
 	 kvstore[m[2]] = tonumber(m[3])
+      elseif m[2] == 'shutdown' then
+	 sock:send('ACK')
+	 loop:stop()
+	 iopub:close()
+	 rawpub:close()
+	 heartbeat:close()
+	 ffi.C.close(io_stdo)
+	 os.execute('rm -f ' .. arg[2]) -- cleanup files
+	 os.execute('rm -f ' .. arg[3]) 
+	 print('Shutting down iTorch')
+	 os.exit()
       end
       sock:send('ACK')
       return

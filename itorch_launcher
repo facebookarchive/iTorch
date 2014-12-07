@@ -13,3 +13,5 @@ IO_PORTNUM=$(mktemp -t itorch.PORTNUM)
 echo $IO_PORTNUM
 $currdir/luajit -e "arg={'$1','$IO_PORTNUM'};require 'itorch.main'" 2>&1 >$IO_STDO &
 $currdir/luajit -e "arg={'$1','$IO_STDO','$IO_PORTNUM'};require 'itorch.IOHandler'"
+
+# temporary files $IO_STDO and $IO_PORTNUM are cleaned up on shutdown of itorch.IOHandler

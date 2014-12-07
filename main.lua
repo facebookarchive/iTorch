@@ -160,11 +160,15 @@ shell_router.shutdown_request = function (sock, msg)
    ipyEncodeAndSend(sock, msg);
    iopub_router.status(sock, msg, 'idle');
    -- cleanup
+   print('Shutting down main')
+   iopub:send_all({'private_msg', 'shutdown'})
+   assert(zassert(iopub:recv()) == 'ACK')
    shell:close()
    control:close()
    stdin:close()
    iopub:close()
    loop:stop()
+   os.exit()
 end
 
 local function traceback(message)
@@ -240,19 +244,6 @@ shell_router.execute_request = function (sock, msg)
 
    if ok then
       -- pyout (Now handled by IOHandler.lua)
-      --[[
-      if not msg.content.silent  and output and output ~= '' then
-         o.header.msg_id = uuid.new()
-         o.header.msg_type = 'pyout'
-         o.content = {
-            data = {},
-            metadata = {},
-            execution_count = s.exec_count
-         }
-         o.content.data['text/plain'] = output
-         ipyEncodeAndSend(iopub, o);
-      end
-      ]]--
       
       -- execute_reply -- shell
       o.header.msg_id = uuid.new()
