@@ -2,11 +2,6 @@
 currdir=`dirname $0`
 currdir=$(cd "$currdir" && pwd)
 
-function finish {
-    kill -9 $PID1
-    kill -9 $PID2
-}
-
 # Pipe for stdout
 IO_STDO=$(mktemp -t itorch.stdout)
 rm $IO_STDO
@@ -16,8 +11,4 @@ mkfifo $IO_STDO
 IO_RAWPUB_PORT=20000
 
 $currdir/luajit -e "arg={'$1','$IO_RAWPUB_PORT'};require 'itorch.main'" 2>&1 >$IO_STDO &
-export PID1=$!
-$currdir/luajit -e "arg={'$1','$IO_STDO','$IO_RAWPUB_PORT'};require 'itorch.IOHandler'" &
-export PID2=$!
-
-#trap finish EXIT
+$currdir/luajit -e "arg={'$1','$IO_STDO','$IO_RAWPUB_PORT'};require 'itorch.IOHandler'"

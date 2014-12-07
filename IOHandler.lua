@@ -33,7 +33,7 @@ local heartbeat, err = context:socket{zmq.REP,    bind = ip .. ipycfg.hb_port}
 zassert(heartbeat, err)
 local iopub, err = context:socket{zmq.PUB,    bind = ip .. ipycfg.iopub_port}
 zassert(iopub, err)
-local rawpub, err = context:socket{zmq.PULL,    connect = ip .. rawpub_port}
+local rawpub, err = context:socket{zmq.PAIR,    connect = ip .. rawpub_port}
 zassert(rawpub, err)
 
 local function handleHeartbeat(sock)
@@ -44,8 +44,8 @@ end
 function handleSTDO(ev)
    local nbytes = ffi.C.read(io_stdo,buffer,chunk_size)
    if nbytes > 0 then
+      local output = ffi.string(buffer, nbytes)
       if kvstore.current_msg then
-	 local output = ffi.string(buffer, nbytes)
 	 local o = {}
 	 o.uuid = kvstore.current_msg.uuid
 	 o.parent_header = kvstore.current_msg.header
@@ -59,6 +59,8 @@ function handleSTDO(ev)
 	 }
 	 o.content.data['text/plain'] = output
 	 util.ipyEncodeAndSend(iopub, o)
+      else
+	 print(output)
       end
    end
    ev:set_interval(1)
@@ -68,12 +70,12 @@ function handleRawPub(sock)
    local m = zassert(sock:recv_all())
    -- if this message is a key-value from main.lua
    if m[1] == 'private_msg' then
-      print(m)
       if m[2] == 'current_msg' then
 	 kvstore[m[2]] = json.decode(m[3])
       elseif m[2] == 'exec_count' then
 	 kvstore[m[2]] = tonumber(m[3])
       end
+      sock:send('ACK')
       return
    end
    -- else, just pass it over to iopub

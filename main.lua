@@ -39,7 +39,7 @@ local control, err   = context:socket{zmq.ROUTER, bind = ip .. ipycfg.control_po
 zassert(control, err)
 local stdin, err     = context:socket{zmq.ROUTER, bind = ip .. ipycfg.stdin_port}
 zassert(stdin, err)
-local iopub, err     = context:socket{zmq.PUSH,    bind = ip .. rawpub_port}
+local iopub, err     = context:socket{zmq.PAIR,    bind = ip .. rawpub_port}
 zassert(iopub, err)
 itorch.iopub = iopub -- for the display functions to have access
 --------------------------------------------------------------
@@ -180,9 +180,11 @@ shell_router.execute_request = function (sock, msg)
    if not msg.content.silent and msg.content.store_history then
       s.exec_count = s.exec_count + 1;
    end
-   -- send current session info to IOHandler
+   -- send current session info to IOHandler, blocking-wait for ACK that it received it
    iopub:send_all({'private_msg', 'current_msg', json.encode(msg)})
+   assert(zassert(iopub:recv()) == 'ACK')
    iopub:send_all({'private_msg', 'exec_count', s.exec_count})
+   assert(zassert(iopub:recv()) == 'ACK')
 
    local line = msg.content.code
    -- help
