@@ -29,7 +29,7 @@ local ipyfile = assert(io.open(arg[1], "rb"), "Could not open iPython config")
 local ipyjson = ipyfile:read("*all")
 ipyfile:close()
 local ipycfg = json.decode(ipyjson)
-local rawpub_port=arg[3]
+local rawpub_port=arg[2]
 --------------------------------------------------------------
 -- bind 0MQ ports: Shell (ROUTER), Control (ROUTER), Stdin (ROUTER), IOPub (PUB)
 local ip = ipycfg.transport .. '://' .. ipycfg.ip .. ':'
@@ -177,6 +177,13 @@ shell_router.execute_request = function (sock, msg)
    itorch.msg = msg
    iopub_router.status(iopub, msg, 'busy');
    local s = session[msg.header.session] or session:create(msg.header.session)
+   if not msg.content.silent and msg.content.store_history then
+      s.exec_count = s.exec_count + 1;
+   end
+   -- send current session info to IOHandler
+   iopub:send_all({'private_msg', 'current_msg', json.encode(msg)})
+   iopub:send_all({'private_msg', 'exec_count', s.exec_count})
+
    local line = msg.content.code
    -- help
    if line and line:find('^%s-?') then
@@ -209,7 +216,6 @@ shell_router.execute_request = function (sock, msg)
    o.parent_header = msg.header
    o.header = tablex.deepcopy(msg.header)
    if not msg.content.silent and msg.content.store_history then
-      s.exec_count = s.exec_count + 1;
       table.insert(s.history.code, msg.content.code);
       table.insert(s.history.output, output);
    end

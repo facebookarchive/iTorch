@@ -2,24 +2,22 @@
 currdir=`dirname $0`
 currdir=$(cd "$currdir" && pwd)
 
+function finish {
+    kill -9 $PID1
+    kill -9 $PID2
+}
+
 # Pipe for stdout
 IO_STDO=$(mktemp -t itorch.stdout)
 rm $IO_STDO
 mkfifo $IO_STDO
 
-# Pipe for passing current message ID
-IO_MSGID=$(mktemp -t itorch.msgid)
-rm $IO_MSGID
-mkfifo $IO_MSGID
-
 # Pipe for passing raw data to be rebroadcasted
 IO_RAWPUB_PORT=20000
 
-$currdir/luajit -e "arg={'$1','$IO_MSGID','$IO_RAWPUB_PORT'};require 'itorch.main'" 2>&1 >$IO_STDO &
-$currdir/luajit -e "arg={'$1','$IO_STDO','$IO_MSGID','$IO_RAWPUB_PORT'};require 'itorch.IOHandler'" 
+$currdir/luajit -e "arg={'$1','$IO_RAWPUB_PORT'};require 'itorch.main'" 2>&1 >$IO_STDO &
+export PID1=$!
+$currdir/luajit -e "arg={'$1','$IO_STDO','$IO_RAWPUB_PORT'};require 'itorch.IOHandler'" &
+export PID2=$!
 
-
-errcode=$?
-if [ $errcode -ne 0 ]; then
-    echo "iTorch failed to initialize with error code: $errcode"
-fi
+#trap finish EXIT

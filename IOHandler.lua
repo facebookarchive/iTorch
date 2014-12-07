@@ -8,14 +8,14 @@ local ffi = require'ffi'
 local util = require 'itorch.util'
 local context = zmq.context()
 local tablex = require 'pl.tablex'
-local current_msg
+local kvstore = {} -- this stores exclusive key-values passed in by main.lua
 ------------------------------------------
 -- load and decode json config
 local ipyfile = assert(io.open(arg[1], "rb"), "Could not open iPython config")
 local ipyjson = ipyfile:read("*all")
 ipyfile:close()
 local ipycfg = json.decode(ipyjson)
-local rawpub_port = arg[4]
+local rawpub_port = arg[3]
 --------------------------------------------------------------
 --- The libc functions used by this process (for non-blocking IO)
 ffi.cdef[[
@@ -27,7 +27,6 @@ local O_NONBLOCK = 0x0004
 local chunk_size = 4096
 local buffer = ffi.new('uint8_t[?]',chunk_size)
 local io_stdo = ffi.C.open(arg[2], O_NONBLOCK)
-local io_msgid = ffi.C.open(arg[3], O_NONBLOCK)
 
 local ip = ipycfg.transport .. '://' .. ipycfg.ip .. ':'
 local heartbeat, err = context:socket{zmq.REP,    bind = ip .. ipycfg.hb_port}
@@ -45,18 +44,18 @@ end
 function handleSTDO(ev)
    local nbytes = ffi.C.read(io_stdo,buffer,chunk_size)
    if nbytes > 0 then
-      if current_msg then
+      if kvstore.current_msg then
 	 local output = ffi.string(buffer, nbytes)
 	 local o = {}
-	 o.uuid = current_msg.uuid
-	 o.parent_header = current_msg.header
-	 o.header = tablex.deepcopy(current_msg.header)
+	 o.uuid = kvstore.current_msg.uuid
+	 o.parent_header = kvstore.current_msg.header
+	 o.header = tablex.deepcopy(kvstore.current_msg.header)
 	 o.header.msg_id = uuid.new()
 	 o.header.msg_type = 'pyout'
 	 o.content = {
 	    data = {},
 	    metadata = {},
-	    execution_count = 1
+	    execution_count = kvstore.exec_count
 	 }
 	 o.content.data['text/plain'] = output
 	 util.ipyEncodeAndSend(iopub, o)
@@ -65,26 +64,24 @@ function handleSTDO(ev)
    ev:set_interval(1)
 end
 
-function handleMSGID(ev)
-   local nbytes = ffi.C.read(io_msgid, buffer,chunk_size)
-   if nbytes > 0 then
-      print('msgid:', ffi.string(buffer, nbytes))
-   end
-   ev:set_interval(1)
-end
-
 function handleRawPub(sock)
-   local m = util.ipyDecode(sock)
-   current_msg = m
-   util.ipyEncodeAndSend(iopub, m)
+   local m = zassert(sock:recv_all())
+   -- if this message is a key-value from main.lua
+   if m[1] == 'private_msg' then
+      print(m)
+      if m[2] == 'current_msg' then
+	 kvstore[m[2]] = json.decode(m[3])
+      elseif m[2] == 'exec_count' then
+	 kvstore[m[2]] = tonumber(m[3])
+      end
+      return
+   end
+   -- else, just pass it over to iopub
+   zassert(iopub:send_all(m))
 end
 
 local function handleIOPub(sock)
-   print('here duh!')
-   local msg = ipyDecode(sock);
-   assert(iopub_router[msg.header.msg_type],
-          'Cannot find appropriate message handler for ' .. msg.header.msg_type)
-   return iopub_router[msg.header.msg_type](sock, msg);
+   print('Error: IOPub is a Publisher, it cant have incoming requests')
 end
 
 
@@ -93,5 +90,4 @@ loop:add_socket(heartbeat, handleHeartbeat)
 loop:add_socket(rawpub, handleRawPub)
 loop:add_socket(iopub, handleIOPub)
 loop:add_interval(1, handleSTDO)
-loop:add_interval(1, handleMSGID)
 loop:start()

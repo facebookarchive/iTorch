@@ -6,8 +6,8 @@ local uuid = require 'uuid'
 local util = {}
 --------------------------------------------------------------
 -- Common decoder function for all messages (except heartbeats which are just looped back)
-local function ipyDecode(sock)
-   local m = zassert(sock:recv_all())
+local function ipyDecode(sock, m)
+   m = m or zassert(sock:recv_all())
    -- print('incoming:')
    -- print(m)
    local o = {}
