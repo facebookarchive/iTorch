@@ -1,3 +1,4 @@
+require 'torch'
 require 'env'
 local zmq = require 'lzmq'
 local zloop = require 'lzmq.loop'
