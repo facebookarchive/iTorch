@@ -1,19 +1,21 @@
-require 'env' -- TODO: remove
-itorch = require 'itorch.env'
+-- external dependencies
 local zmq = require 'lzmq'
 local zloop = require 'lzmq.loop'
 local zassert = zmq.assert
 local json=require 'cjson'
 local uuid = require 'uuid'
 local tablex = require 'pl.tablex'
+
+-- torch ecosystem dependencies
 local completer = require 'trepl.completer'
-ifx = require 'itorch.gfx'
-itorch.Plot = require 'itorch.Plot'
-require 'paths'
-require 'dok'
+require 'dok' -- for help(function) to work
+require 'env' -- TODO: remove
+
+-- itorch requires
+require 'itorch'
 local util = require 'itorch.util'
-local context = zmq.context()
 -----------------------------------------
+local context = zmq.context()
 local session = {}
 session.create = function(self, uuid)
    local s = {}
@@ -50,7 +52,7 @@ do
    portnum_f:writeInt(port)
    portnum_f:close()
 end
-itorch.iopub = iopub -- for the display functions to have access
+itorch._iopub = iopub -- for the display functions to have access
 --------------------------------------------------------------
 -- IOPub router
 local iopub_router = {}
@@ -147,7 +149,7 @@ io.stdout:setvbuf('no')
 io.stderr:setvbuf('no')
 
 shell_router.execute_request = function (sock, msg)
-   itorch.msg = msg
+   itorch._msg = msg
    iopub_router.status(iopub, msg, 'busy');
    local s = session[msg.header.session] or session:create(msg.header.session)
    if not msg.content.silent and msg.content.store_history then

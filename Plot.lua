@@ -9,6 +9,7 @@ setmetatable(Plot, {
 });
 
 -- https://github.com/bokeh/Bokeh.jl/blob/master/doc/other/simplest_bokeh_plot.html
+-- https://github.com/bokeh/Bokeh.jl/blob/master/doc/other/bokeh_bindings.md
 
 -- constructor
 function Plot.new()
@@ -16,16 +17,23 @@ function Plot.new()
    for k,v in pairs(Plot) do plot[k] = v end
    plot.docid = uuid.new()
    plot.allmodels = {}
-
+   
+   -- ColumnDataSource
+   -- DataRange1d
+   -- Glyph
+   -- Plot
    plot:_addElement('PlotContext')
-
+   -- [optional]
+   -- BasicTicker
+   -- BasicTickFormatter
+   -- PanTool
 
    return plot
 end
 
-function Plot:_addElement(typestr, children)
+function Plot:_addElement(type, children)
    local m = {}
-   m.type = typestr
+   m.type = type
    m.id = uuid.new()
    m.attributes = {}
    m.attributes.doc = self.docid

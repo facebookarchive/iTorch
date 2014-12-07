@@ -3,35 +3,33 @@ local json = require 'cjson'
 local tablex = require 'pl.tablex'
 require 'pl.text'.format_operator()
 require 'image'
-local itorch = require 'itorch.env'
+local itorch = require 'itorch._env'
 local util = require 'itorch.util'
 
-itorch.ifx = itorch.ifx or {}
-local ifx = itorch.ifx
-
-local bokeh_template = [[
-         <script type="text/javascript">
-         $(function() {
-                  var modelid = "${model_id}";
-                  var modeltype = "PlotContext";
-                  var all_models = {${all_models}};
-                  Bokeh.load_models(all_models);
-                  var model = Bokeh.Collections(modeltype).get(modelid);
-                  $("#${window_id}").html(''); // clear any previous plot in window_id
-                  var view = new model.default_view({model: model, el: "#${window_id}"});
-          });
-      </script>
-         <div class="plotdiv" id="${div_id}"></div>
-                       ]]
+local bokeh_template = 
+[[
+<script type="text/javascript">
+  $(function() {
+    var modelid = "${model_id}";
+    var modeltype = "PlotContext";
+    var all_models = {${all_models}};
+    Bokeh.load_models(all_models);
+    var model = Bokeh.Collections(modeltype).get(modelid);
+    $("#${window_id}").html(''); // clear any previous plot in window_id
+    var view = new model.default_view({model: model, el: "#${window_id}"});
+  });
+</script>
+<div class="plotdiv" id="${div_id}"></div>
+]]
 
 -- model_id, all_models, window_id, div_id
 -- doc: https://github.com/bokeh/Bokeh.jl/blob/master/doc/other/bokeh_bindings.md
-function ifx.draw(allmodels, window_id)
+function itorch.draw(allmodels, window_id)
    assert(type(allmodels) == 'table'
              and allmodels[1] and allmodels[1].id,
           "argument 1 is not a plot object")
-   assert(itorch.iopub,'itorch.iopub socket not set')
-   assert(itorch.msg,'itorch.msg not set')
+   assert(itorch._iopub,'itorch._iopub socket not set')
+   assert(itorch._msg,'itorch._msg not set')
 
    -- find model_id
    local model_id
@@ -55,18 +53,18 @@ function ifx.draw(allmodels, window_id)
          model_id = model_id
                        };
    content.metadata = {}
-   local header = tablex.deepcopy(itorch.msg.header)
+   local header = tablex.deepcopy(itorch._msg.header)
    header.msg_id = uuid.new()
    header.msg_type = 'display_data'
 
    -- send displayData
    local m = {
-      uuid = itorch.msg.uuid,
+      uuid = itorch._msg.uuid,
       content = content,
-      parent_header = itorch.msg.header,
+      parent_header = itorch._msg.header,
       header = header
    }
-   util.ipyEncodeAndSend(itorch.iopub, m)
+   util.ipyEncodeAndSend(itorch._iopub, m)
    return window_id
 end
 
@@ -108,8 +106,8 @@ end
 
 -- grid plots http://nbviewer.ipython.org/github/ContinuumIO/bokeh-notebooks/blob/master/quickstart/quickstart.ipynb
 
-function ifx.demo(window_id)
+function itorch.demo(window_id)
    require 'itorch.test'
 end
 
-return ifx;
+return itorch;
