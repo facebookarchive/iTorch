@@ -5,6 +5,7 @@ local tablex = require 'pl.tablex'
 require 'image'
 local itorch = require 'itorch.env'
 require 'itorch.bokeh'
+local util = require 'itorch.util'
 
 itorch.ifx = itorch.ifx or {}
 local ifx = itorch.ifx
@@ -49,7 +50,7 @@ function ifx.image(img)
          parent_header = itorch.msg.header,
          header = header
       }
-      itorch.ipyEncodeAndSend(itorch.iopub, m)
+      util.ipyEncodeAndSend(itorch.iopub, m)
    else
       error('unhandled type in ifx.image:' .. torch.type(img))
    end

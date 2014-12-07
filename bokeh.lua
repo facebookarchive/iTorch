@@ -4,6 +4,7 @@ local tablex = require 'pl.tablex'
 require 'pl.text'.format_operator()
 require 'image'
 local itorch = require 'itorch.env'
+local util = require 'itorch.util'
 
 itorch.ifx = itorch.ifx or {}
 local ifx = itorch.ifx
@@ -65,7 +66,7 @@ function ifx.draw(allmodels, window_id)
       parent_header = itorch.msg.header,
       header = header
    }
-   itorch.ipyEncodeAndSend(itorch.iopub, m)
+   util.ipyEncodeAndSend(itorch.iopub, m)
    return window_id
 end
 
