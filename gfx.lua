@@ -2,6 +2,7 @@ local ffi = require 'ffi'
 local uuid = require 'uuid'
 local base64 = require 'base64'
 local tablex = require 'pl.tablex'
+require 'pl.text'.format_operator()
 require 'image'
 local itorch = require 'itorch._env'
 require 'itorch.bokeh'
@@ -55,6 +56,46 @@ end
 
 function itorch.lena()
    itorch.image(image.lena())
+end
+
+local html_template = 
+[[
+<script type="text/javascript">
+  $(function() {
+    $("#${window_id}").html('${html_content}'); // clear any previous plot in window_id     
+  });
+</script>
+<div id="${div_id}"></div>
+]]
+function itorch.html(html, window_id)
+   assert(itorch._iopub,'itorch._iopub socket not set')
+   assert(itorch._msg,'itorch._msg not set')
+
+   local div_id = uuid.new()
+   window_id = window_id or div_id
+   local content = {}
+   content.source = 'itorch'
+   content.data = {}
+   content.data['text/html'] =
+      html_template % {
+	 html_content = html,
+         window_id = window_id,
+         div_id = div_id
+      };
+   content.metadata = {}
+   local header = tablex.deepcopy(itorch._msg.header)
+   header.msg_id = uuid.new()
+   header.msg_type = 'display_data'
+
+   -- send displayData
+   local m = {
+      uuid = itorch._msg.uuid,
+      content = content,
+      parent_header = itorch._msg.header,
+      header = header
+   }
+   util.ipyEncodeAndSend(itorch._iopub, m)
+   return window_id
 end
 
 return itorch;
