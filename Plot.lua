@@ -12,17 +12,20 @@ setmetatable(Plot, {
 -- https://github.com/bokeh/Bokeh.jl/blob/master/doc/other/bokeh_bindings.md
 
 -- constructor
-function Plot.new()
+function Plot.new(data)
    local plot = {}
    for k,v in pairs(Plot) do plot[k] = v end
    plot.docid = uuid.new()
    plot.allmodels = {}
-   
-   -- ColumnDataSource
+   plot._options = {}
+
+   plot:_addPlotElement('Plot')
+   plot:_addElement('PlotContext', {'Plot'})
+   plot:_addElement('ColumnDataSource')
+   if data then plot:data(data) end -- fill up ColumnDataSource
    -- DataRange1d
    -- Glyph
    -- Plot
-   plot:_addElement('PlotContext')
    -- [optional]
    -- BasicTicker
    -- BasicTickFormatter
@@ -38,6 +41,35 @@ function Plot:_addElement(type, children)
    m.attributes = {}
    m.attributes.doc = self.docid
    m.attributes.id = m.id
+   if children then
+      m.attributes.children = {}
+      for i=1,#children do
+	 local child = {}
+	 child.id = self._elem[children[i]].id
+	 child.type = self._elem[children[i]].type
+	 table.insert(m.attributes.children, child)
+      end
+   end
+   self._elem = self._elem or {}
+   self._elem[type] = m
+   return self._elem[type]
+end
+
+function Plot:_addPlotElement()
+   --[[ Plot consists of additional attributes:
+      - title
+      - outer_width
+      - outer_height
+      - canvas_width
+      - canvas_height
+      - data_sources (dict)
+      - tools (dict)
+      - renderers (dict), which consists of Glyph
+      - x_range (DataRange1d)
+      - y_range (DataRange1d)      
+   ]]--
+   local p = self._addElement('Plot')
+   p.title = self._title or ''
 end
 
 do
@@ -50,6 +82,7 @@ do
                   x:data(torch.randn(10))
                   x:data(torch.randn(10,2))
                 ]]
+
    -- set and/or get data
    function Plot:data(d)
       if not d then return self._data end
@@ -59,7 +92,8 @@ do
          if d[1] and d[2] and type(d[1]) == 'table' and type(d[2]) == 'table' then
             if torch.isTensor(d[1]) then d[1] = d[1]:clone():storage():totable() end
             if torch.isTensor(d[2]) then d[2] = d[2]:clone():storage():totable() end
-            assert(#d[1] == #d[2], 'x and y vectors are not the same size: ' .. #d[1] .. ',' .. #d[2])
+            assert(#d[1] == #d[2], 'x and y vectors are not the same size: ' 
+		      .. #d[1] .. ',' .. #d[2])
             self._data = { x = d[1], y = d[2] }
          elseif type(d[1] == 'number') then
             if #d == 0 then error(help) end
@@ -102,10 +136,10 @@ function Plot:options(o)
 end
 
 function Plot:title(t)
-   if t and type(t) == string then
-      self.title = t
+   if t and type(t) == 'string' then
+      self._title = t
    end
-   return t
+   return self._title
 end
 
 function Plot:clone()
@@ -137,7 +171,7 @@ end
 
 -- set range automatically to [min, max]
 function Plot:autoRange()
-   assert(self.data, 'data not yet set in the plot')
+   assert(self._data, 'data not yet set in the plot')
    local xt = torch.Tensor(self._data.x)
    local xrange = {xt:min(), xt:max()}
 
