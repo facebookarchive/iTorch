@@ -15,7 +15,7 @@ description = {
 
 dependencies = {
    "torch >= 7.0",
-   "trepl",
+   "luafilesystem",
    "penlight",
    "lua-cjson",
    "uuid",

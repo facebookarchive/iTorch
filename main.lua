@@ -7,7 +7,7 @@ local uuid = require 'uuid'
 local tablex = require 'pl.tablex'
 
 -- torch ecosystem dependencies
-local completer = require 'trepl.completer'
+local completer = require 'itorch.completer'
 require 'dok' -- for help(function) to work
 require 'env' -- TODO: remove
 
