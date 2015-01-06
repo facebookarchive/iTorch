@@ -30,7 +30,7 @@ end
    tohtml
 ]]--
 
-function Plot:data(x,y,color,legend) -- TODO: marker
+function Plot:add(x,y,color,legend) -- TODO: marker
    -- x and y are [a 1D tensor of N elements or a table of N elements]
    assert(x and (torch.isTensor(x) and x:dim() == 1) 
 	     or (torch.type(x) == 'table'), 
@@ -87,6 +87,15 @@ end
 
 function Plot:title(t)
    if t then self._title = t end
+   return self
+end
+
+function Plot:xaxis(t)
+   if t then self._xaxis = t end
+   return self
+end
+function Plot:yaxis(t)
+   if t then self._yaxis = t end
    return self
 end
 
@@ -148,7 +157,7 @@ local function createCircleGlyph(docid, line_color, line_alpha, fill_color, fill
    end
    glyph.attributes.fill_alpha = {}
    glyph.attributes.fill_alpha.units = 'data'
-   glyph.attributes.fill_alpha.value = 1.0
+   glyph.attributes.fill_alpha.value = 0.2
 
    glyph.attributes.size = {}
    glyph.attributes.size.units = sizeunits
@@ -248,7 +257,7 @@ function Plot:_toAllModels()
    local bt1 = newElem('BasicTicker', self._docid)
    bt1.attributes.num_minor_ticks = 5
    local linearAxis1 = createLinearAxis(self._docid, plot.id, 
-					'Untitled x-axis', tf1.id, bt1.id)
+					self._xaxis or json.null, tf1.id, bt1.id)
    renderers[1] = linearAxis1
    local grid1 = createGrid(self._docid, plot.id, 0, bt1.id)
    renderers[2] = grid1
@@ -261,7 +270,7 @@ function Plot:_toAllModels()
    local bt2 = newElem('BasicTicker', self._docid)
    bt2.attributes.num_minor_ticks = 5
    local linearAxis2 = createLinearAxis(self._docid, plot.id, 
-					'Untitled y-axis', tf2.id, bt2.id)
+					self._yaxis or json.null, tf2.id, bt2.id)
    renderers[3] = linearAxis2
    local grid2 = createGrid(self._docid, plot.id, 1, bt2.id)
    renderers[4] = grid2
@@ -380,23 +389,11 @@ local html_template = [[
 </html>
 ]]
 
---[[
-local bokehcss, bokehjs
-do
-   local fname = 'bokeh-0.7.0.min'
-   local cssf = assert(io.open(paths.concat(paths.dirname(paths.thisfile()), fname .. '.css')))
-   bokehcss = cssf:read('*all')
-   cssf:close()
-   local jsf = assert(io.open(paths.concat(paths.dirname(paths.thisfile()), fname .. '.js')))
-   bokehjs = jsf:read('*all')
-   jsf:close()
-end
-]]--
-
-function Plot:toTemplate(template)
+function Plot:toTemplate(template, window_id)
    local allmodels = self:_toAllModels()
    local div_id = uuid.new()
-   local window_id = div_id
+   local window_id = window_id or div_id
+   self._winid = window_id
    -- find model_id
    local model_id
    for k,v in ipairs(allmodels) do
@@ -420,13 +417,10 @@ end
 
 function Plot:draw(window_id)
    local util = require 'itorch.util'
-   local div_id = uuid.new()
-   window_id = window_id or div_id
-   self._winid = window_id
    local content = {}
    content.source = 'itorch'
    content.data = {}
-   content.data['text/html'] = self:toTemplate(embed_template)
+   content.data['text/html'] = self:toTemplate(embed_template, window_id)
    content.metadata = {}
    local header = tablex.deepcopy(itorch._msg.header)
    header.msg_id = uuid.new()
@@ -440,10 +434,12 @@ function Plot:draw(window_id)
       header = header
    }
    util.ipyEncodeAndSend(itorch._iopub, m)
+   return self
 end
 
 function Plot:redraw()
   self:draw(self._winid)
+  return self
 end
 
 
