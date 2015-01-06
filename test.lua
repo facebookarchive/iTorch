@@ -13,8 +13,8 @@
 local Plot = require 'itorch.Plot'
 plot = Plot():data(torch.randn(40):mul(100), torch.randn(40):mul(100), 'red'):data(torch.randn(40):mul(100), torch.randn(40):mul(100), 'blue')
 
--- itorch.html(plot:toHTML())
-print(plot:toHTML())
+plot:draw()
+-- print(plot:toHTML())
 -- plot:draw()
 
 --[[

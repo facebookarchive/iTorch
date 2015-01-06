@@ -13,7 +13,7 @@ $([IPython.events]).on('notebook_loaded.Notebook', function(){
 // logic per page-refresh
 $([IPython.events]).on("app_initialized.NotebookApp", function () {
     $.ajax({
-        url: "http://cdn.pydata.org/bokeh-0.6.1.min.js",
+        url: "http://cdn.pydata.org/bokeh-0.7.0.min.js",
         dataType: "script",
         async: false,
         success: function () {},
@@ -21,7 +21,7 @@ $([IPython.events]).on("app_initialized.NotebookApp", function () {
             throw new Error("Could not load bokeh.js");
         }
     });
-    $('head').append('<link rel="stylesheet" type="text/css" href="http://cdn.pydata.org/bokeh-0.6.1.min.css">');
+    $('head').append('<link rel="stylesheet" type="text/css" href="http://cdn.pydata.org/bokeh-0.7.0.min.css">');
 	
     
     IPython.CodeCell.options_default['cm_config']['mode'] = 'lua';

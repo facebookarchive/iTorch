@@ -1,6 +1,7 @@
 local tablex = require 'pl.tablex'
 local uuid = require 'uuid'
 local json = require 'cjson'
+require 'pl.text'.format_operator()
 local Plot = {}
 
 setmetatable(Plot, {
@@ -87,16 +88,6 @@ end
 function Plot:title(t)
    if t then self._title = t end
    return self
-end
-
-function Plot:draw()
-   -- check that you are in an itorch session. if you are, draw. if not, return :toHTML()
-   self.winID = self.winID or uuid.new()
-   -- convert the data into appropriate columndatasource1d
-   
-end
-
-function Plot:redraw()
 end
 
 -- merges multiple tables into one
@@ -355,15 +346,8 @@ local function encodeAllModels(m)
    return s
 end
 
-local bokeh_template = 
+local base_template = 
 [[
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <link rel="stylesheet" href="http://cdn.pydata.org/bokeh-0.7.0.min.css" type="text/css" />
-        <script type="text/javascript" src="http://cdn.pydata.org/bokeh-0.7.0.js"></script>
-
 <script type="text/javascript">
   $(function() {
     var modelid = "${model_id}";
@@ -375,15 +359,41 @@ local bokeh_template =
     var view = new model.default_view({model: model, el: "#${window_id}"});
   });
 </script>
+]]
+
+local embed_template = base_template .. [[
+<div class="plotdiv" id="${div_id}"></div>
+]]
+
+local html_template = [[
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="http://cdn.pydata.org/bokeh-0.7.0.min.css" type="text/css" />
+        <script type="text/javascript" src="http://cdn.pydata.org/bokeh-0.7.0.js"></script>
+]] .. base_template .. [[
     </head>
     <body>
-
-<div class="plotdiv" id="${div_id}"></div>
+        <div class="plotdiv" id="${div_id}"></div>
     </body>
 </html>
 ]]
 
-function Plot:toHTML()
+--[[
+local bokehcss, bokehjs
+do
+   local fname = 'bokeh-0.7.0.min'
+   local cssf = assert(io.open(paths.concat(paths.dirname(paths.thisfile()), fname .. '.css')))
+   bokehcss = cssf:read('*all')
+   cssf:close()
+   local jsf = assert(io.open(paths.concat(paths.dirname(paths.thisfile()), fname .. '.js')))
+   bokehjs = jsf:read('*all')
+   jsf:close()
+end
+]]--
+
+function Plot:toTemplate(template)
    local allmodels = self:_toAllModels()
    local div_id = uuid.new()
    local window_id = div_id
@@ -395,7 +405,7 @@ function Plot:toHTML()
       end
    end
    assert(model_id, "Could not find Plot element in input allmodels");
-   local html = bokeh_template % {
+   local html = template % {
       window_id = window_id,
       div_id = div_id,
       all_models = encodeAllModels(allmodels),
@@ -403,6 +413,40 @@ function Plot:toHTML()
    };
    return html
 end
+
+function Plot:toHTML()
+   return self:toTemplate(html_template)
+end
+
+function Plot:draw(window_id)
+   local util = require 'itorch.util'
+   local div_id = uuid.new()
+   window_id = window_id or div_id
+   self._winid = window_id
+   local content = {}
+   content.source = 'itorch'
+   content.data = {}
+   content.data['text/html'] = self:toTemplate(embed_template)
+   content.metadata = {}
+   local header = tablex.deepcopy(itorch._msg.header)
+   header.msg_id = uuid.new()
+   header.msg_type = 'display_data'
+
+   -- send displayData
+   local m = {
+      uuid = itorch._msg.uuid,
+      content = content,
+      parent_header = itorch._msg.header,
+      header = header
+   }
+   util.ipyEncodeAndSend(itorch._iopub, m)
+end
+
+function Plot:redraw()
+  self:draw(self._winid)
+end
+
+
 
 function Plot:save(filename)
 end

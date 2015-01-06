@@ -7,6 +7,6 @@ IF(LUAROCKS_PREFIX)
 ENDIF()
 FIND_PACKAGE(Torch REQUIRED)
 
-FILE(GLOB luasrc *.lua)
+FILE(GLOB luasrc *.lua static/jquery-1.11.2.min.js static/bokeh-0.7.0.min.js  static/bokeh-0.7.0.min.css)
 SET(src "")
 ADD_TORCH_PACKAGE(itorch "${src}" "${luasrc}" "iTorch")
