@@ -1,17 +1,21 @@
 -- images
 -- itorch.lena()
-itorch.image({image.lena(), image.lena(), image.lena()})
+-- itorch.image({image.lena(), image.lena(), image.lena()})
 
 -- html
-itorch.html('<p><b>Hi there!</b> how are you</p>')
-window_id = itorch.html('<p>This text will be replaced in 2 seconds</p>')
-os.execute('sleep 2')
-itorch.html('<p>magic!</p>', window_id)
+-- itorch.html('<p><b>Hi there!</b> how are you</p>')
+-- window_id = itorch.html('<p>This text will be replaced in 2 seconds</p>')
+-- os.execute('sleep 2')
+-- itorch.html('<p>magic!</p>', window_id)
 
 -- scatter plots
 -- 1D tensor
-plot = itorch.Plot(torch.randn(400):mul(100))
-plot:draw()
+local Plot = require 'itorch.Plot'
+plot = Plot():data(torch.randn(40):mul(100), torch.randn(40):mul(100), 'red'):data(torch.randn(40):mul(100), torch.randn(40):mul(100), 'blue')
+
+-- itorch.html(plot:toHTML())
+print(plot:toHTML())
+-- plot:draw()
 
 --[[
 -- 1D table
