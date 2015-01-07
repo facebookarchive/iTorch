@@ -56,32 +56,25 @@ function Plot:add(x,y,color,legend) -- TODO: marker
    -- if no color is specified, it is defaulted to red for all points.
    -- TODO do color argcheck
    color = color or 'red'
+   legend = legend or 'unnamed'
 
    local N = x:nElement()
    self._data = self._data or {}
    self._data.x = self._data.x or {}
    self._data.y = self._data.y or {}
    self._data.color = self._data.color or {}
+   self._data.legend = self._data.legend or {}
    local _d = {}
    _d.x = x
    _d.y = y
-
-   -- if it is a single color, replicate the color for each element
-   if type(color) == 'string' then
-      _d.color = {}
-      for i=1,N do
-	 _d.color[i] = color
-      end
-   else -- color is a table of N strings
-      _d.color = color
-   end
-
+   _d.color = color
    if legend then 
-      _d.legend = legend 
+      _d.legend = legend
    end
    table.insert(self._data.x, _d.x)
    table.insert(self._data.y, _d.y)
    table.insert(self._data.color, _d.color)
+   table.insert(self._data.legend, _d.legend)
    return self
 end
 
@@ -96,6 +89,11 @@ function Plot:xaxis(t)
 end
 function Plot:yaxis(t)
    if t then self._yaxis = t end
+   return self
+end
+
+function Plot:legend(bool)
+   if bool then self._legend = bool end
    return self
 end
 
@@ -136,22 +134,20 @@ local function createCircleGlyph(docid, line_color, line_alpha, fill_color, fill
    glyph.attributes.y = {}
    glyph.attributes.y.units = 'data'
    glyph.attributes.y.field = 'y'
+   glyph.attributes.line_color = {}
    if line_color then
-      glyph.attributes.line_color = {}
       glyph.attributes.line_color.value = line_color
    else
-      glyph.attributes.line_color = {}
       glyph.attributes.line_color.units = 'data'
       glyph.attributes.line_color.field = 'line_color'
    end
    glyph.attributes.line_alpha = {}
    glyph.attributes.line_alpha.units = 'data'
    glyph.attributes.line_alpha.value = 1.0
+   glyph.attributes.fill_color = {}
    if fill_color then
-      glyph.attributes.fill_color = {}
       glyph.attributes.fill_color.value = fill_color
    else
-      glyph.attributes.fill_color = {}
       glyph.attributes.fill_color.units = 'data'
       glyph.attributes.fill_color.field = 'fill_color'
    end
@@ -168,11 +164,14 @@ end
 
 local function createDataRange1d(docid, cds, col)
    local drx = newElem('DataRange1d', docid)
-   drx.attributes.sources = {{}}
-   drx.attributes.sources[1].source = {}
-   drx.attributes.sources[1].source.id = cds.id
-   drx.attributes.sources[1].source.type = cds.type
-   drx.attributes.sources[1].columns = {col}
+   drx.attributes.sources = {}
+   for i=1,#cds do
+      drx.attributes.sources[i] = {}
+      drx.attributes.sources[i].source = {}
+      drx.attributes.sources[i].source.id = cds[i].id
+      drx.attributes.sources[i].source.type = cds[i].type
+      drx.attributes.sources[i].columns = {col}
+   end
    return drx
 end
 
@@ -215,52 +214,117 @@ local function createTool(docid, name, plotid, dimensions)
    return t
 end
 
+local function createLegend(docid, plotid, legends, grs)
+   local l = newElem('Legend', docid)
+   l.attributes.plot = {}
+   l.attributes.plot.subtype = 'Figure'
+   l.attributes.plot.type = 'Plot'
+   l.attributes.plot.id = plotid
+   l.attributes.legends = {}
+   for i=1,#legends do
+      l.attributes.legends[i] = {}
+      l.attributes.legends[i][1] = legends[i]
+      l.attributes.legends[i][2] = {}
+      l.attributes.legends[i][2].type = 'GlyphRenderer'
+      l.attributes.legends[i][2].id = grs[i].id
+   end
+   return l
+end
+
+local function createColumnDataSource(docid, x, y, line_color, fill_color)
+   local cds = newElem('ColumnDataSource', docid)
+   cds.attributes.selected = {}
+   cds.attributes.cont_ranges = {}
+   cds.attributes.discrete_ranges = {}
+   cds.attributes.column_names = {'x', 'y'}
+   if type(line_color) ~= 'string' then 
+      cds.attributes.column_names[#cds.attributes.column_names + 1] = 'line_color'
+   end
+   if type(fill_color) ~= 'string' then 
+      cds.attributes.column_names[#cds.attributes.column_names + 1] = 'fill_color'
+   end
+   cds.attributes.data = {}
+   if torch.isTensor(x) then x = x:contiguous():storage():totable() end
+   if torch.isTensor(y) then y = y:contiguous():storage():totable() end
+   cds.attributes.data.x = x
+   cds.attributes.data.y = y
+   if type(line_color) ~= 'string' then 
+      cds.attributes.data.line_color = line_color
+   end
+   if type(fill_color) ~= 'string' then 
+      cds.attributes.data.fill_color = fill_color
+   end
+   return cds
+end
+
+
 function Plot:_toAllModels()
    self._docid = json.null -- self._docid or uuid.new()
    local all_models = {}
 
-   -- convert data to ColumnDataSource
-   local cds = newElem('ColumnDataSource', self._docid)
-   cds.attributes.selected = {}
-   cds.attributes.cont_ranges = {}
-   cds.attributes.discrete_ranges = {}
-   cds.attributes.column_names = {'fill_color', 'line_color', 'x', 'y'}
-   cds.attributes.data = {}
-   cds.attributes.data.x = combineTable(self._data.x)
-   cds.attributes.data.y = combineTable(self._data.y)
-   cds.attributes.data.line_color = combineTable(self._data.color)
-   cds.attributes.data.fill_color = combineTable(self._data.color)
-   table.insert(all_models, cds)
+   local plot = newElem('Plot', self._docid)
+   local renderers = {}
+
+   local cdss = {}
+   local grs = {}
+   for i=1,#self._data.x do
+      -- convert data to ColumnDataSource
+      local cds = createColumnDataSource(self._docid, self._data.x[i], 
+					 self._data.y[i], 
+					 self._data.color[i], self._data.color[i])
+      table.insert(all_models, cds)
+      cdss[#cdss+1] = cds
+
+      -- create Glyph (circle)
+      local line_color, fill_color
+      if type(self._data.color[i]) == 'string' then 
+	 line_color = self._data.color[i]
+	 fill_color = self._data.color[i]
+      end
+      local sglyph = createCircleGlyph(self._docid, line_color, 0.1, fill_color, 0.1, 'screen', 10)
+      local nsglyph = createCircleGlyph(self._docid, "#1f77b4", 0.1, 
+					"#1f77b4", 0.1, 'screen', 10)
+      table.insert(all_models, sglyph)
+      table.insert(all_models, nsglyph)
+
+      -- GlyphRenderer 
+      local gr = newElem('GlyphRenderer', self._docid)
+      gr.attributes.nonselection_glyph = {}
+      gr.attributes.nonselection_glyph.type = 'Circle'
+      gr.attributes.nonselection_glyph.id = nsglyph.id
+      gr.attributes.data_source = {}
+      gr.attributes.data_source.type = 'ColumnDataSource'
+      gr.attributes.data_source.id = cds.id
+      gr.attributes.name = json.null
+      gr.attributes.server_data_source = json.null
+      gr.attributes.selection_glyph = json.null
+      gr.attributes.glyph = {}
+      gr.attributes.glyph.type = 'Circle'
+      gr.attributes.glyph.id = sglyph.id
+      renderers[#renderers+1] = gr
+      table.insert(all_models, gr)
+      grs[#grs+1] = gr
+   end
 
    -- create DataRange1d for x and y
-   local drx = createDataRange1d(self._docid, cds, 'x')
-   local dry = createDataRange1d(self._docid, cds, 'y')
+   local drx = createDataRange1d(self._docid, cdss, 'x')
+   local dry = createDataRange1d(self._docid, cdss, 'y')
    table.insert(all_models, drx)
    table.insert(all_models, dry)
-
-   -- create Glyph (circle)
-   local sglyph = createCircleGlyph(self._docid, nil, 0.1, nil, 0.1, 'screen', 10)
-   local nsglyph = createCircleGlyph(self._docid, "#1f77b4", 0.1, 
-				     "#1f77b4", 0.1, 'screen', 10)
-   table.insert(all_models, sglyph)
-   table.insert(all_models, nsglyph)
 
    -- ToolEvents
    local toolEvents = newElem('ToolEvents', self._docid)
    toolEvents.attributes.geometries = {}
    table.insert(all_models, toolEvents)
 
-   local plot = newElem('Plot', self._docid)
-   local renderers = {}
-
    local tf1 = newElem('BasicTickFormatter', self._docid)
    local bt1 = newElem('BasicTicker', self._docid)
    bt1.attributes.num_minor_ticks = 5
    local linearAxis1 = createLinearAxis(self._docid, plot.id, 
 					self._xaxis or json.null, tf1.id, bt1.id)
-   renderers[1] = linearAxis1
+   renderers[#renderers+1] = linearAxis1
    local grid1 = createGrid(self._docid, plot.id, 0, bt1.id)
-   renderers[2] = grid1
+   renderers[#renderers+1] = grid1
    table.insert(all_models, tf1)
    table.insert(all_models, bt1)
    table.insert(all_models, linearAxis1)
@@ -271,15 +335,14 @@ function Plot:_toAllModels()
    bt2.attributes.num_minor_ticks = 5
    local linearAxis2 = createLinearAxis(self._docid, plot.id, 
 					self._yaxis or json.null, tf2.id, bt2.id)
-   renderers[3] = linearAxis2
+   renderers[#renderers+1] = linearAxis2
    local grid2 = createGrid(self._docid, plot.id, 1, bt2.id)
-   renderers[4] = grid2
+   renderers[#renderers+1] = grid2
    table.insert(all_models, tf2)
    table.insert(all_models, bt2)
    table.insert(all_models, linearAxis2)
    table.insert(all_models, grid2)
-
-   -- PanTool
+   
    local tools = {}
    tools[1] = createTool(self._docid, 'PanTool', plot.id, {'width', 'height'})
    tools[2] = createTool(self._docid, 'WheelZoomTool', plot.id, {'width', 'height'})
@@ -288,23 +351,12 @@ function Plot:_toAllModels()
    tools[5] = createTool(self._docid, 'ResizeTool', plot.id, nil)
    tools[6] = createTool(self._docid, 'ResetTool', plot.id, nil)
    for i=1,#tools do table.insert(all_models, tools[i]) end
-
-   -- GlyphRenderer 
-   local gr = newElem('GlyphRenderer', self._docid)
-   gr.attributes.nonselection_glyph = {}
-   gr.attributes.nonselection_glyph.type = 'Circle'
-   gr.attributes.nonselection_glyph.id = nsglyph.id
-   gr.attributes.data_source = {}
-   gr.attributes.data_source.type = 'ColumnDataSource'
-   gr.attributes.data_source.id = cds.id
-   gr.attributes.name = json.null
-   gr.attributes.server_data_source = json.null
-   gr.attributes.selection_glyph = json.null
-   gr.attributes.glyph = {}
-   gr.attributes.glyph.type = 'Circle'
-   gr.attributes.glyph.id = sglyph.id
-   renderers[5] = gr
-   table.insert(all_models, gr)
+   
+   if self._legend then 
+      local legend = createLegend(self._docid, plot.id, self._data.legend, grs)
+      renderers[#renderers+1] = legend
+      table.insert(all_models, legend)
+   end
 
    -- Plot
    plot.attributes.x_range = {}
@@ -416,6 +468,7 @@ function Plot:toHTML()
 end
 
 function Plot:draw(window_id)
+   if not itorch then return self end
    local util = require 'itorch.util'
    local content = {}
    content.source = 'itorch'

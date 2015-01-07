@@ -8,18 +8,19 @@
 -- os.execute('sleep 2')
 -- itorch.html('<p>magic!</p>', window_id)
 
-local x1 = torch.randn(40):mul(100)
-local y1 = torch.randn(40):mul(100)
-local x2 = torch.randn(40):mul(100)
-local y2 = torch.randn(40):mul(100)
-local x3 = torch.randn(40):mul(200)
-local y3 = torch.randn(40):mul(200)
+x1 = torch.randn(40):mul(100)
+y1 = torch.randn(40):mul(100)
+x2 = torch.randn(40):mul(100)
+y2 = torch.randn(40):mul(100)
+x3 = torch.randn(40):mul(200)
+y3 = torch.randn(40):mul(200)
 
 -- scatter plots
 local Plot = require 'itorch.Plot'
-plot = Plot():add(x1, y1, 'red'):add(x2, y2, 'blue'):draw()
-plot:add(x3,y3,'green'):redraw()
+plot = Plot():add(x1, y1, 'red', 'hi'):add(x2, y2, 'blue', 'bye'):draw()
+plot:add(x3,y3,'green', 'yolo'):redraw()
 plot:title(' My plot!'):redraw()
 plot:xaxis('length'):yaxis('width'):redraw()
-
--- print(plot:toHTML())
+plot:legend(true)
+-- plot:redraw()
+print(plot:toHTML())
