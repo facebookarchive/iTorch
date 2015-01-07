@@ -224,9 +224,9 @@ local function createLegend(docid, plotid, legends, grs)
    for i=1,#legends do
       l.attributes.legends[i] = {}
       l.attributes.legends[i][1] = legends[i]
-      l.attributes.legends[i][2] = {}
-      l.attributes.legends[i][2].type = 'GlyphRenderer'
-      l.attributes.legends[i][2].id = grs[i].id
+      l.attributes.legends[i][2] = {{}}
+      l.attributes.legends[i][2][1].type = 'GlyphRenderer'
+      l.attributes.legends[i][2][1].id = grs[i].id
    end
    return l
 end
