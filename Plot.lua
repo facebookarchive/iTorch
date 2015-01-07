@@ -10,9 +10,6 @@ setmetatable(Plot, {
                 end
 });
 
--- https://github.com/bokeh/Bokeh.jl/blob/master/doc/other/simplest_bokeh_plot.html
--- https://github.com/bokeh/Bokeh.jl/blob/master/doc/other/bokeh_bindings.md
-
 -- constructor
 function Plot.new()
    local plot = {}
@@ -22,7 +19,7 @@ end
 
 --[[
    Bare essential functions needed:
-   data (x,y,color,marker,legend)
+   data (x,y,color,legend,marker)
    title
    scale
    draw
@@ -498,6 +495,14 @@ end
 
 
 function Plot:save(filename)
+   assert(filename and not paths.dirp(filename), 
+	  'filename has to be provided and should not be a directory')
+   local html = self:toHTML()
+   local f = assert(io.open(filename, 'w'), 
+		    'filename cannot be opened in write mode')
+   f:write(html)
+   f:close()
+   return self
 end
 
 return Plot
