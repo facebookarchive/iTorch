@@ -12,10 +12,10 @@ itorch.audio('volkswagen.mp3')
 itorch.video('small.mp4')
 
 -- html
-itorch.html('<p><b>Hi there!</b> how are you</p>')
-window_id = itorch.html('<p>This text will be replaced in 2 seconds</p>')
-os.execute('sleep 2')
-itorch.html('<p>magic!</p>', window_id)
+itorch.html('<p><b>Hi there!</b> this is arbitrary HTML</p>')
+-- window_id = itorch.html('<p>This text will be replaced in 2 seconds</p>')
+-- os.execute('sleep 2')
+-- itorch.html('<p>magic!</p>', window_id)
 
 x1 = torch.randn(40):mul(100)
 y1 = torch.randn(40):mul(100)
