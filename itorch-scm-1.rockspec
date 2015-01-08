@@ -40,6 +40,7 @@ build = {
 	cp ipynblogo.png ~/.ipython/profile_torch/static/base/images
 	mkdir -p ~/.ipython/profile_torch/static/custom/
 	cp custom.js ~/.ipython/profile_torch/static/custom/
+	cp custom.css ~/.ipython/profile_torch/static/custom/
 	cp itorch $(LUA_BINDIR)/
 	cp itorch_launcher $(LUA_BINDIR)/
 	cmake -E make_directory build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(LUA_BINDIR)/.." -DCMAKE_INSTALL_PREFIX="$(PREFIX)" && $(MAKE)	

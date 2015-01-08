@@ -9,14 +9,15 @@ require 'itorch.bokeh'
 local util = require 'itorch.util'
 
 -- Example: require 'image';itorch.image(image.scale(image.lena(),16,16))
-function itorch.image(img)
+function itorch.image(img, opts)
    assert(itorch._iopub,'itorch._iopub socket not set')
    assert(itorch._msg,'itorch._msg not set')
    if torch.typename(img) == 'string' then -- assume that it is path
       img = image.load(img) -- TODO: revamp this to just directly load the blob, infer file prefix, and send.
    end
    if torch.isTensor(img) or torch.type(img) == 'table' then
-      local imgDisplay = image.toDisplayTensor(img)
+      opts = opts or {input=img, padding=2}
+      local imgDisplay = image.toDisplayTensor(opts)
       local tmp = os.tmpname() .. '.png'
       image.save(tmp, imgDisplay)
       -------------------------------------------------------------

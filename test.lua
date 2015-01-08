@@ -1,6 +1,9 @@
 -- images
-itorch.image(image.lena())
 itorch.image({image.lena(), image.lena(), image.lena()})
+
+require 'nn'
+m=nn.SpatialConvolution(3,32,25,25)
+itorch.image(m.weight)
 
 -- audio
 itorch.audio('volkswagen.mp3')

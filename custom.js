@@ -22,6 +22,7 @@ $([IPython.events]).on("app_initialized.NotebookApp", function () {
         }
     });
     $('head').append('<link rel="stylesheet" type="text/css" href="http://cdn.pydata.org/bokeh-0.7.0.min.css">');
+    $('head').append('<link rel="stylesheet" type="text/css" href="custom.css">');
 	
     
     IPython.CodeCell.options_default['cm_config']['mode'] = 'lua';
