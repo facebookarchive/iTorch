@@ -9,7 +9,7 @@ itorch.image(m.weight)
 itorch.audio('volkswagen.mp3')
 
 -- video
-itorch.video('chase.ogv')
+itorch.video('small.mp4')
 
 -- html
 itorch.html('<p><b>Hi there!</b> how are you</p>')
@@ -34,6 +34,3 @@ plot:legend(true)
 plot:redraw()
 -- print(plot:toHTML())
 plot:save('out.html')
-
-
-

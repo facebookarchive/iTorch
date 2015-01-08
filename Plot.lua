@@ -404,18 +404,64 @@ local function encodeAllModels(m)
    return s
 end
 
-local base_template = 
-[[
+local base_template = [[
 <script type="text/javascript">
-  $(function() {
-    var modelid = "${model_id}";
-    var modeltype = "Plot";
-    var all_models = ${all_models};
-    Bokeh.load_models(all_models);
-    var model = Bokeh.Collections(modeltype).get(modelid);
-    $("#${window_id}").html(''); // clear any previous plot in window_id
-    var view = new model.default_view({model: model, el: "#${window_id}"});
-  });
+$(function() {
+    if (typeof (window._bokeh_onload_callbacks) === "undefined"){
+	window._bokeh_onload_callbacks = [];
+    }
+    function load_lib(url, callback){
+	window._bokeh_onload_callbacks.push(callback);
+	if (window._bokeh_is_loading){
+	    console.log("Bokeh: BokehJS is being loaded, scheduling callback at", new Date());
+	    return null;
+	}
+	console.log("Bokeh: BokehJS not loaded, scheduling load and callback at", new Date());
+	window._bokeh_is_loading = true;
+	var s = document.createElement('script');
+	s.src = url;
+	s.async = true;
+	s.onreadystatechange = s.onload = function(){
+	    Bokeh.embed.inject_css("http://cdn.pydata.org/bokeh-0.7.0.min.css");
+	    window._bokeh_onload_callbacks.forEach(function(callback){callback()});
+	};
+	s.onerror = function(){
+	    console.warn("failed to load library " + url);
+	};
+	document.getElementsByTagName("head")[0].appendChild(s);
+    }
+
+    bokehjs_url = "http://cdn.pydata.org/bokeh-0.7.0.min.js"
+
+    var elt = document.getElementById("${window_id}");
+    if(elt==null) {
+	console.log("Bokeh: ERROR: autoload.js configured with elementid '${window_id}'"  
+		    + "but no matching script tag was found. ")
+	return false;
+    }
+    
+    if(typeof(Bokeh) !== "undefined") {
+	console.log("Bokeh: BokehJS loaded, going straight to plotting");
+	var modelid = "${model_id}";
+	var modeltype = "Plot";
+	var all_models = ${all_models};
+	Bokeh.load_models(all_models);
+	var model = Bokeh.Collections(modeltype).get(modelid);
+	$("#${window_id}").html(''); // clear any previous plot in window_id
+	var view = new model.default_view({model: model, el: "#${window_id}"});
+    } else {
+	load_lib(bokehjs_url, function() {
+	    console.log("Bokeh: BokehJS plotting callback run at", new Date())
+	    var modelid = "${model_id}";
+	    var modeltype = "Plot";
+	    var all_models = ${all_models};
+	    Bokeh.load_models(all_models);
+	    var model = Bokeh.Collections(modeltype).get(modelid);
+	    $("#${window_id}").html(''); // clear any previous plot in window_id
+	    var view = new model.default_view({model: model, el: "#${window_id}"});
+	});
+    }
+});
 </script>
 ]]
 
