@@ -1,3 +1,5 @@
+local Plot = require 'itorch.Plot'
+
 -- images
 itorch.image({image.lena(), image.lena(), image.lena()})
 
@@ -25,7 +27,6 @@ x3 = torch.randn(40):mul(200)
 y3 = torch.randn(40):mul(200)
 
 -- scatter plots
-local Plot = require 'itorch.Plot'
 plot = Plot():circle(x1, y1, 'red', 'hi'):circle(x2, y2, 'blue', 'bye'):draw()
 plot:circle(x3,y3,'green', 'yolo'):redraw()
 plot:title(' My plot!'):redraw()
@@ -35,7 +36,12 @@ plot:redraw()
 -- print(plot:toHTML())
 plot:save('out.html')
 
-
 -- line plots
-local Plot = require 'itorch.Plot'
-plot = Plot():segment(x1, y1, x1+10,y1+10, 'red','example'):legend(true):draw()
+plot = Plot():line(x1, y1,'red','example'):legend(true):draw()
+
+-- segment plots
+plot = Plot():segment(x1, y1, x1+10,y1+10, 'red','example'):circle(x1,y1):legend(true):draw()
+
+U = torch.randn(40,40):mul(100)
+V = torch.randn(40,40):mul(100)
+plot = Plot():quiver(U,V,'red','example'):draw()

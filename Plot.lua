@@ -39,7 +39,7 @@ local function tensorValidate(x)
    return x
 end
 
-function Plot:circle(x,y,color,legend) -- TODO: marker
+function Plot:_simpleGlyph(x,y,color,legend, name) -- TODO: marker
    -- x and y are [a 1D tensor of N elements or a table of N elements]
    x = tensorValidate(x)
    y = tensorValidate(y)
@@ -55,7 +55,7 @@ function Plot:circle(x,y,color,legend) -- TODO: marker
 
    self._data = self._data or {}
    local _d = {}
-   _d.type = 'Circle'
+   _d.type = name
    _d.x = x
    _d.y = y
    _d.fill_color = color
@@ -65,6 +65,18 @@ function Plot:circle(x,y,color,legend) -- TODO: marker
    end
    table.insert(self._data, _d)
    return self
+end
+
+function Plot:circle(x,y,color,legend)
+   return self:_simpleGlyph(x,y,color,legend,'Circle')
+end
+
+function Plot:line(x,y,color,legend)
+   return self:_simpleGlyph(x,y,color,legend,'Line')
+end
+
+function Plot:triangle(x,y,color,legend)
+   return self:_simpleGlyph(x,y,color,legend,'Triangle')
 end
 
 function Plot:segment(x0,y0,x1,y1,color,legend)
@@ -98,6 +110,51 @@ function Plot:segment(x0,y0,x1,y1,color,legend)
       _d.legend = legend
    end
    table.insert(self._data, _d)
+   return self
+end
+
+function Plot:quiver(U,V,color,legend)
+   assert(U:size(1) == V:size(1) and U:size(2) == V:size(2) and U:dim() == 2 and V:dim() == 2, 
+	  'U and V should be 2D and of same size')
+   local xx = torch.linspace(1,U:size(1), U:size(1))
+   local yy = torch.linspace(1,U:size(2), U:size(2))
+   local function meshgrid(x,y)
+      local xx = torch.repeatTensor(x, y:size(1),1)
+      local yy = torch.repeatTensor(y:view(-1,1), 1, x:size(1))
+      return xx, yy
+   end
+   local Y, X = meshgrid(xx, yy)
+   local speed = torch.sqrt(torch.cmul(U,U) + torch.cmul(V,V))
+   local theta = torch.atan(torch.cdiv(V,U))
+
+   -- line start
+   local x0 = X:view(-1)
+   local y0 = Y:view(-1)
+
+   -- line length and angle
+   local length = speed:view(-1)
+   local angle = theta:view(-1)
+
+   -- line end
+   local x1 = x0 + torch.cmul(length, torch.cos(angle))
+   local y1 = y0 + torch.cmul(length, torch.sin(angle))
+   ----------------------------------------------------
+   -- calculate arrow-head
+   local ll = (x1 - x0)
+   local ll2 = (y1 - y0)
+   local len = torch.sqrt(torch.cmul(ll,ll) + torch.cmul(ll2,ll2))
+   local h = len / 10 -- arrow length
+   local w = len / 100 -- arrow width
+   local Ux = torch.cdiv(ll,len)
+   local Uy = torch.cdiv(ll2,len)
+   local Vx = -Uy
+   local Vy = Ux
+   local v1x = x1 - torch.cmul(Ux,h) + torch.cmul(Vx,w);
+   local v1y = y1 - torch.cmul(Uy,h) + torch.cmul(Vy,w);
+
+   local v2x = x1 - torch.cmul(Ux,h) - torch.cmul(Vx,w);
+   local v2y = y1 - torch.cmul(Uy,h) - torch.cmul(Vy,w);
+   self:segment(x0, y0, x1,y1, color,legend):segment(v1x,v1y,v2x,v2y,color):segment(v1x,v1y,x1,y1,color):segment(v2x,v2y,x1,y1,color)
    return self
 end
 
@@ -150,8 +207,8 @@ local function newElem(name, docid)
 end
 
 local createGlyph = {}
-createGlyph['Circle'] = function(docid, data)
-   local glyph = newElem('Circle', docid)
+local function createSimpleGlyph(docid, data, name)
+   local glyph = newElem(name, docid)
    glyph.attributes.x = {}
    glyph.attributes.x.units = 'data'
    glyph.attributes.x.field = 'x'
@@ -184,6 +241,17 @@ createGlyph['Circle'] = function(docid, data)
    glyph.attributes.size.value = 10
    glyph.attributes.tags = {}
    return glyph
+end
+createGlyph['Circle'] = function(docid, data)
+   return createSimpleGlyph(docid, data, 'Circle')
+end
+
+createGlyph['Line'] = function(docid, data)
+   return createSimpleGlyph(docid, data, 'Line')
+end
+
+createGlyph['Triangle'] = function(docid, data)
+   return createSimpleGlyph(docid, data, 'Triangle')
 end
 
 local function addunit(t,f)
