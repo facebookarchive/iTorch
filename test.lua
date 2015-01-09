@@ -26,8 +26,8 @@ y3 = torch.randn(40):mul(200)
 
 -- scatter plots
 local Plot = require 'itorch.Plot'
-plot = Plot():add(x1, y1, 'red', 'hi'):add(x2, y2, 'blue', 'bye'):draw()
-plot:add(x3,y3,'green', 'yolo'):redraw()
+plot = Plot():circle(x1, y1, 'red', 'hi'):circle(x2, y2, 'blue', 'bye'):draw()
+plot:circle(x3,y3,'green', 'yolo'):redraw()
 plot:title(' My plot!'):redraw()
 plot:xaxis('length'):yaxis('width'):redraw()
 plot:legend(true)
