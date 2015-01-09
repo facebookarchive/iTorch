@@ -34,3 +34,8 @@ plot:legend(true)
 plot:redraw()
 -- print(plot:toHTML())
 plot:save('out.html')
+
+
+-- line plots
+local Plot = require 'itorch.Plot'
+plot = Plot():segment(x1, y1, x1+10,y1+10, 'red','example'):legend(true):draw()

@@ -53,12 +53,45 @@ function Plot:circle(x,y,color,legend) -- TODO: marker
    color = color or 'red'
    legend = legend or 'unnamed'
 
-   local N = x:nElement()
    self._data = self._data or {}
    local _d = {}
    _d.type = 'Circle'
    _d.x = x
    _d.y = y
+   _d.fill_color = color
+   _d.line_color = color
+   if legend then 
+      _d.legend = legend
+   end
+   table.insert(self._data, _d)
+   return self
+end
+
+function Plot:segment(x0,y0,x1,y1,color,legend)
+   -- x and y are [a 1D tensor of N elements or a table of N elements]
+   x0 = tensorValidate(x0)
+   x1 = tensorValidate(x1)
+   y0 = tensorValidate(y0)
+   y1 = tensorValidate(y1)
+   -- check if x and y are same number of elements
+   assert(x0:nElement() == y0:nElement(), 'x0 and y0 should have same number of elements')
+   assert(x0:nElement() == x1:nElement(), 'x0 and x1 should have same number of elements')
+   assert(x0:nElement() == y1:nElement(), 'x0 and y1 should have same number of elements')
+   
+   -- [optional] color is one of: red,blue,green or an html color string (like #FF8932). 
+   -- color can either be a single value, or N values (one value per (x,y) point)
+   -- if no color is specified, it is defaulted to red for all points.
+   -- TODO do color argcheck
+   color = color or 'red'
+   legend = legend or 'unnamed'
+
+   self._data = self._data or {}
+   local _d = {}
+   _d.type = 'Segment'
+   _d.x0 = x0
+   _d.y0 = y0
+   _d.x1 = x1
+   _d.y1 = y1
    _d.fill_color = color
    _d.line_color = color
    if legend then 
@@ -145,6 +178,39 @@ createGlyph['Circle'] = function(docid, data)
    glyph.attributes.fill_alpha = {}
    glyph.attributes.fill_alpha.units = 'data'
    glyph.attributes.fill_alpha.value = 0.2
+
+   glyph.attributes.size = {}
+   glyph.attributes.size.units = 'screen'
+   glyph.attributes.size.value = 10
+   glyph.attributes.tags = {}
+   return glyph
+end
+
+local function addunit(t,f)
+   t[f] = {}
+   t[f].units = 'data'
+   t[f].field = f
+end
+
+createGlyph['Segment'] = function(docid, data)
+   local glyph = newElem('Segment', docid)
+   addunit(glyph.attributes, 'x0')
+   addunit(glyph.attributes, 'x1')
+   addunit(glyph.attributes, 'y0')
+   addunit(glyph.attributes, 'y1')
+   if type(data.line_color) == 'string' then
+      glyph.attributes.line_color = {}
+      glyph.attributes.line_color.value = data.line_color
+   else
+      addunit(glyph.attributes, 'line_color')
+   end
+   glyph.attributes.line_alpha = {}
+   glyph.attributes.line_alpha.units = 'data'
+   glyph.attributes.line_alpha.value = 1.0
+
+   glyph.attributes.line_width = {}
+   glyph.attributes.line_width.units = 'data'
+   glyph.attributes.line_width.value = 2
 
    glyph.attributes.size = {}
    glyph.attributes.size.units = 'screen'
