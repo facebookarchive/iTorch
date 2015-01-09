@@ -113,11 +113,11 @@ function Plot:segment(x0,y0,x1,y1,color,legend)
    return self
 end
 
-function Plot:quiver(U,V,color,legend)
-   assert(U:size(1) == V:size(1) and U:size(2) == V:size(2) and U:dim() == 2 and V:dim() == 2, 
+function Plot:quiver(U,V,color,legend,scaling)
+   assert(U:dim() == 2 and V:dim() == 2 and U:size(1) == V:size(1) and U:size(2) == V:size(2), 
 	  'U and V should be 2D and of same size')
-   local xx = torch.linspace(1,U:size(1), U:size(1))
-   local yy = torch.linspace(1,U:size(2), U:size(2))
+   local xx = torch.linspace(1,U:size(1), U:size(1)):typeAs(U)
+   local yy = torch.linspace(1,U:size(2), U:size(2)):typeAs(V)
    local function meshgrid(x,y)
       local xx = torch.repeatTensor(x, y:size(1),1)
       local yy = torch.repeatTensor(y:view(-1,1), 1, x:size(1))
@@ -132,7 +132,8 @@ function Plot:quiver(U,V,color,legend)
    local y0 = Y:view(-1)
 
    -- line length and angle
-   local length = speed:view(-1)
+   scaling = scaling or 40
+   local length = speed:view(-1) / scaling
    local angle = theta:view(-1)
 
    -- line end

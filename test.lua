@@ -29,7 +29,7 @@ y3 = torch.randn(40):mul(200)
 -- scatter plots
 plot = Plot():circle(x1, y1, 'red', 'hi'):circle(x2, y2, 'blue', 'bye'):draw()
 plot:circle(x3,y3,'green', 'yolo'):redraw()
-plot:title(' My plot!'):redraw()
+plot:title('Scatter Plot Demo'):redraw()
 plot:xaxis('length'):yaxis('width'):redraw()
 plot:legend(true)
 plot:redraw()
@@ -37,11 +37,12 @@ plot:redraw()
 plot:save('out.html')
 
 -- line plots
-plot = Plot():line(x1, y1,'red','example'):legend(true):draw()
+plot = Plot():line(x1, y1,'red','example'):legend(true):title('Line Plot Demo'):draw()
 
 -- segment plots
-plot = Plot():segment(x1, y1, x1+10,y1+10, 'red','example'):circle(x1,y1):legend(true):draw()
+plot = Plot():segment(x1, y1, x1+10,y1+10, 'red','demo'):title('Segment Plot Demo'):draw()
 
-U = torch.randn(40,40):mul(100)
-V = torch.randn(40,40):mul(100)
-plot = Plot():quiver(U,V,'red','example'):draw()
+-- quiver plots
+U = torch.randn(3,3):mul(100)
+V = torch.randn(3,3):mul(100)
+plot = Plot():quiver(U,V,'red',''):title('Quiver Plot Demo'):draw()
