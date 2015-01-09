@@ -21,8 +21,8 @@ dependencies = {
    "uuid",
    "lbase64",
    "env",
-   "image"
-   -- "lzmq == scm"
+   "image",
+   "lzmq"
 }
 
 build = {

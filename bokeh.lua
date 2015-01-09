@@ -7,7 +7,7 @@ local itorch = require 'itorch._env'
 local util = require 'itorch.util'
 
 -- 2D charts
--- scatter
+--* scatter
 -- bar (grouped and stacked)
 -- pie
 -- histogram
@@ -17,16 +17,16 @@ local util = require 'itorch.util'
 -- confusion matrix
 -- image_rgba
 -- candlestick
--- vectors
+--* vectors
 ------------------
 -- 2D plots
--- line plot
+--* line plot
 -- log-scale plots
 -- semilog-scale plots
 -- error-bar / candle-stick plot
 -- contour plots
 -- polar plots / angle-histogram plot / compass plot (arrowed histogram)
--- vector fields (feather plot, quiver plot, compass plot, 3D quiver plot)
+--* vector fields (feather plot, quiver plot, compass plot, 3D quiver plot)
 -------------------------
 -- 3D plots
 -- line plot
@@ -39,11 +39,6 @@ local util = require 'itorch.util'
 
 -- create a torch.peaks (useful)
 --------------------------------------------------------------------
--- view videos
---
-
--- grid plots http://nbviewer.ipython.org/github/ContinuumIO/bokeh-notebooks/blob/master/quickstart/quickstart.ipynb
-
 function itorch.demo(window_id)
    require 'itorch.test'
 end
