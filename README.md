@@ -36,26 +36,31 @@ itorch qtconsole  # Qt mode
 ```
 
 ## Full documentation
-iTorch in notebook mode works like any other iPython notebook.
+iTorch in notebook mode works like any other iPython notebook.  
+It provides useful inline auto-complete. Whenever you need auto-complete, use the <TAB> key.  
+It also provides inline help using the ? symbol.
+For example, `?torch.cmul`
+![screenshot](screenshots/help.png "")
+
 In addition, we introduce visualization functions for images, video, audio, html and plots.
 
 itorch.image(img) - You can pass in a 3-D tensor (for a single image), or a table of 3D tensors (image collages).
 ```lua
   itorch.image({image.lena(), image.lena(), image.lena()})
 ```
-![screenshot](https://raw.githubusercontent.com/facebook/iTorch/master/screenshots/image.png "")
+![screenshot](screenshots/image.png "")
 
 itorch.audio(path) - You can pass in a filename of an audio file. Formats supported are mp3, ogg, aac
 ```lua
 itorch.audio('example.mp3')
 ```
-![screenshot](https://raw.githubusercontent.com/facebook/iTorch/master/screenshots/audio.png "")
+![screenshot](screenshots/audio.png "")
 
 itorch.video(path) - You can pass in a filename of a video file. Formats supported are mp4, ogv, mpeg
 ```lua
 itorch.video('example.mp4')
 ```
-![screenshot](https://raw.githubusercontent.com/facebook/iTorch/master/screenshots/video.png "")
+![screenshot](screenshots/video.png "")
 
 [window-id] = itorch.html(htmlstring, [window-id]) - Raw HTML string that is passed is rendered. A window handle is returned, that can be reused to replace the HTML with something else.
 ```lua
@@ -64,7 +69,7 @@ window_id = itorch.html('<p>This text will be replaced in 2 seconds</p>')
 os.execute('sleep 2')
 itorch.html('<p>magic!</p>', window_id)
 ```
-![screenshot](https://raw.githubusercontent.com/facebook/iTorch/master/screenshots/html.png "")
+![screenshot](screenshots/html.png "")
 
 ###Plotting
 iTorch can plot to screen in notebook mode, or save the plot to disk as a html file.
@@ -89,7 +94,7 @@ plot:redraw()
 -- print(plot:toHTML())
 plot:save('out.html')
 ```
-![screenshot](https://raw.githubusercontent.com/facebook/iTorch/master/screenshots/scatter.png "")
+![screenshot](screenshots/scatter.png "")
 
 ```lua
 -- line plots
@@ -107,7 +112,7 @@ U = torch.randn(3,3):mul(100)
 V = torch.randn(3,3):mul(100)
 plot = Plot():quiver(U,V,'red',''):title('Quiver Plot Demo'):draw()
 ```
-![screenshot](https://raw.githubusercontent.com/facebook/iTorch/master/screenshots/quiver.png "")
+![screenshot](screenshots/quiver.png "")
 
 ## Join the Torch community
 See the CONTRIBUTING file for how to help out.
