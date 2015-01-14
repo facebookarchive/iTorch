@@ -3,7 +3,8 @@ We want to make contributing to this project as easy and transparent as
 possible.
 
 ## Our Development Process
-... (in particular how this is synced with internal changes to the project)
+iTorch is not big enough that we have a standard development process.  
+We follow the [Torch-7](https://github.com/torch/torch7/blob/master/CONTRIBUTING.md) development process loosely.
 
 ## Pull Requests
 We actively welcome your pull requests.
@@ -27,7 +28,6 @@ clear and has sufficient instructions to be able to reproduce the issue.
 ## Coding Style  
 * 2 spaces for indentation rather than tabs
 * 80 character line length
-* ...
 
 ## License
 By contributing to iTorch, you agree that your contributions will be licensed
