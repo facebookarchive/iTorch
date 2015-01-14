@@ -1,8 +1,8 @@
 # iTorch
-iTorch is an [iPython](http://ipython.org) Kernel for Torch, with plotting (using [Bokeh.js](http://bokeh.pydata.org/docs/gallery.html) plots) and visualization of images, video and audio
+iTorch is an [IPython](http://ipython.org) Kernel for Torch, with plotting (using [Bokeh.js](http://bokeh.pydata.org/docs/gallery.html) plots) and visualization of images, video and audio
 
 ## Features
-iTorch in notebook mode works like any other iPython notebook.  
+iTorch in notebook mode works like any other IPython notebook.  
 It provides useful **inline auto-complete**. Whenever you need auto-complete, use the **TAB key**.  
 ![screenshot](screenshots/autocomplete.png "")
 
@@ -87,7 +87,7 @@ plot = Plot():quiver(U,V,'red',''):title('Quiver Plot Demo'):draw()
 iTorch requires or works with
 * Mac OS X or Linux (tested in Ubuntu 14.04)
 * [Torch-7](https://github.com/torch/torch7/wiki/Cheatsheet#installing-and-running-torch)
-* [iPython](http://ipython.org/install.html)
+* [IPython](http://ipython.org/install.html)
 * ZeroMQ
 ```bash
 # OSX
