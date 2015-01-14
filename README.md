@@ -1,5 +1,5 @@
 # iTorch
-iTorch is an iPython Kernel for Torch, with plotting (using Bokeh plots) and visualization of images, video and audio
+iTorch is an [iPython](http://ipython.org) Kernel for Torch, with plotting (using Bokeh plots) and visualization of images, video and audio
 
 ## Examples
 ...
@@ -8,6 +8,7 @@ iTorch is an iPython Kernel for Torch, with plotting (using Bokeh plots) and vis
 iTorch requires or works with
 * Mac OS X or Linux (tested in Ubuntu 14.04)
 * [Torch-7](https://github.com/torch/torch7/wiki/Cheatsheet#installing-and-running-torch)
+* [iPython](http://ipython.org/install.html)
 * ZeroMQ
 ```bash
 # OSX
@@ -42,16 +43,19 @@ itorch.image(img) - You can pass in a 3-D tensor (for a single image), or a tabl
 ```lua
   itorch.image({image.lena(), image.lena(), image.lena()})
 ```
+![screenshot](https://raw.githubusercontent.com/facebook/iTorch/master/screenshots/image.png "")
 
 itorch.audio(path) - You can pass in a filename of an audio file. Formats supported are mp3, ogg, aac
 ```lua
 itorch.audio('example.mp3')
 ```
+![screenshot](https://raw.githubusercontent.com/facebook/iTorch/master/screenshots/audio.png "")
 
 itorch.video(path) - You can pass in a filename of a video file. Formats supported are mp4, ogv, mpeg
 ```lua
 itorch.video('example.mp4')
 ```
+![screenshot](https://raw.githubusercontent.com/facebook/iTorch/master/screenshots/video.png "")
 
 [window-id] = itorch.html(htmlstring, [window-id]) - Raw HTML string that is passed is rendered. A window handle is returned, that can be reused to replace the HTML with something else.
 ```lua
@@ -60,6 +64,7 @@ window_id = itorch.html('<p>This text will be replaced in 2 seconds</p>')
 os.execute('sleep 2')
 itorch.html('<p>magic!</p>', window_id)
 ```
+![screenshot](https://raw.githubusercontent.com/facebook/iTorch/master/screenshots/html.png "")
 
 ###Plotting
 iTorch can plot to screen in notebook mode, or save the plot to disk as a html file.
@@ -83,18 +88,26 @@ plot:legend(true)
 plot:redraw()
 -- print(plot:toHTML())
 plot:save('out.html')
+```
+![screenshot](https://raw.githubusercontent.com/facebook/iTorch/master/screenshots/scatter.png "")
 
+```lua
 -- line plots
 plot = Plot():line(x1, y1,'red','example'):legend(true):title('Line Plot Demo'):draw()
+```
 
+```lua
 -- segment plots
 plot = Plot():segment(x1, y1, x1+10,y1+10, 'red','demo'):title('Segment Plot Demo'):draw()
+```
 
+```lua
 -- quiver plots
 U = torch.randn(3,3):mul(100)
 V = torch.randn(3,3):mul(100)
 plot = Plot():quiver(U,V,'red',''):title('Quiver Plot Demo'):draw()
 ```
+![screenshot](https://raw.githubusercontent.com/facebook/iTorch/master/screenshots/quiver.png "")
 
 ## Join the Torch community
 See the CONTRIBUTING file for how to help out.
