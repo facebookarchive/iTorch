@@ -1,9 +1,6 @@
 # iTorch
 iTorch is an [iPython](http://ipython.org) Kernel for Torch, with plotting (using Bokeh plots) and visualization of images, video and audio
 
-## Examples
-...
-
 ## Requirements
 iTorch requires or works with
 * Mac OS X or Linux (tested in Ubuntu 14.04)
@@ -113,6 +110,9 @@ V = torch.randn(3,3):mul(100)
 plot = Plot():quiver(U,V,'red',''):title('Quiver Plot Demo'):draw()
 ```
 ![screenshot](screenshots/quiver.png "")
+
+## Examples
+Demo iTorch notebook: http://nbviewer.ipython.org/github/facebook/iTorch/blob/master/iTorch_Demo.ipynb
 
 ## Join the Torch community
 See the CONTRIBUTING file for how to help out.
