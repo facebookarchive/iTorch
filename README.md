@@ -1,40 +1,11 @@
 # iTorch
-iTorch is an [iPython](http://ipython.org) Kernel for Torch, with plotting (using Bokeh plots) and visualization of images, video and audio
+iTorch is an [iPython](http://ipython.org) Kernel for Torch, with plotting (using [Bokeh.js](http://bokeh.pydata.org/docs/gallery.html) plots) and visualization of images, video and audio
 
-## Requirements
-iTorch requires or works with
-* Mac OS X or Linux (tested in Ubuntu 14.04)
-* [Torch-7](https://github.com/torch/torch7/wiki/Cheatsheet#installing-and-running-torch)
-* [iPython](http://ipython.org/install.html)
-* ZeroMQ
-```bash
-# OSX
-brew install zeromq
-
-# Ubuntu
-sudo apt-get install libzmq3-dev
-```
-
-## Installing iTorch
-```bash
-git clone https://github.com/facebook/iTorch.git
-cd iTorch
-luarocks make 
-```
-
-## How iTorch works
-Start iTorch at command-line using the following command:
-```bash
-itorch notebook  # notebook mode
-OR  
-itorch  # console mode
-OR  
-itorch qtconsole  # Qt mode
-```
-
-## Full documentation
+## Features
 iTorch in notebook mode works like any other iPython notebook.  
-It provides useful inline auto-complete. Whenever you need auto-complete, use the <TAB> key.  
+It provides useful inline auto-complete. Whenever you need auto-complete, use the **TAB key**.  
+![screenshot](screenshots/autocomplete.png "")
+
 It also provides inline help using the ? symbol.
 For example, `?torch.cmul`
 ![screenshot](screenshots/help.png "")
@@ -110,6 +81,37 @@ V = torch.randn(3,3):mul(100)
 plot = Plot():quiver(U,V,'red',''):title('Quiver Plot Demo'):draw()
 ```
 ![screenshot](screenshots/quiver.png "")
+
+## Requirements
+iTorch requires or works with
+* Mac OS X or Linux (tested in Ubuntu 14.04)
+* [Torch-7](https://github.com/torch/torch7/wiki/Cheatsheet#installing-and-running-torch)
+* [iPython](http://ipython.org/install.html)
+* ZeroMQ
+```bash
+# OSX
+brew install zeromq
+
+# Ubuntu
+sudo apt-get install libzmq3-dev
+```
+
+## Installing iTorch
+```bash
+git clone https://github.com/facebook/iTorch.git
+cd iTorch
+luarocks make 
+```
+
+## How iTorch works
+Start iTorch at command-line using the following command:
+```bash
+itorch notebook  # notebook mode
+OR  
+itorch  # console mode
+OR  
+itorch qtconsole  # Qt mode
+```
 
 ## Examples
 Demo iTorch notebook: http://nbviewer.ipython.org/github/facebook/iTorch/blob/master/iTorch_Demo.ipynb
