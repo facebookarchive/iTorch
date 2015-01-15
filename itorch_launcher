@@ -3,13 +3,13 @@ currdir=`dirname $0`
 currdir=$(cd "$currdir" && pwd)
 
 # Pipe for stdout
-IO_STDO=$(mktemp -t itorch.stdout)
+IO_STDO=$(mktemp -t itorch.stdout.XXXXXXXXXX)
 rm $IO_STDO
 mkfifo $IO_STDO
 
 # Process 1 writes the port number to communicate to this file
 # Process 2 reades from this file and binds to that port
-IO_PORTNUM=$(mktemp -t itorch.PORTNUM)
+IO_PORTNUM=$(mktemp -t itorch.PORTNUM.XXXXXXXXXX)
 $currdir/luajit -e "arg={'$1','$IO_PORTNUM'};require 'itorch.main'" 2>&1 >$IO_STDO &
 $currdir/luajit -e "arg={'$1','$IO_STDO','$IO_PORTNUM'};require 'itorch.IOHandler'"
 
