@@ -43,6 +43,9 @@ itorch.html('<p>magic!</p>', window_id)
 iTorch can plot to screen in notebook mode, or save the plot to disk as a html file.
 
 A Plot object is introduced, that can plot different kinds of plots such as scatter, line, segment, quiver plots.  
+```lua
+Plot = require 'itorch.Plot'
+```
 The plotting can be extended to more kinds of plots, as it uses [Bokeh.js](http://bokeh.pydata.org/en/latest/docs/reference/bokehjs.html) as its backend.
 ```lua
 x1 = torch.randn(40):mul(100)
@@ -51,7 +54,7 @@ x2 = torch.randn(40):mul(100)
 y2 = torch.randn(40):mul(100)
 x3 = torch.randn(40):mul(200)
 y3 = torch.randn(40):mul(200)
-Plot = require 'itorch.Plot'
+
 
 -- scatter plots
 plot = Plot():circle(x1, y1, 'red', 'hi'):circle(x2, y2, 'blue', 'bye'):draw()
