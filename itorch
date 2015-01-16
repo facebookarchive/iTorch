@@ -2,5 +2,7 @@
 mode=$1
 if [ -z "$mode" ]; then
     mode="console"
+else
+    shift
 fi
-ipython $mode --profile torch
+ipython $mode --profile torch $@
