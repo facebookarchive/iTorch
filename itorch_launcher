@@ -5,7 +5,11 @@ currdir=$(cd "$currdir" && pwd)
 # Pipe for stdout
 IO_STDO=$(mktemp -t itorch.stdout.XXXXXXXXXX)
 rm $IO_STDO
-mkfifo $IO_STDO
+if [ $(uname) == "Darwin" ]; then
+    mkfifo $IO_STDO
+else
+    touch $IO_STDO
+fi
 
 # Process 1 writes the port number to communicate to this file
 # Process 2 reades from this file and binds to that port
