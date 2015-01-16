@@ -90,7 +90,7 @@ plot = Plot():quiver(U,V,'red',''):title('Quiver Plot Demo'):draw()
 iTorch requires or works with
 * Mac OS X or Linux (tested in Ubuntu 14.04)
 * [Torch-7](https://github.com/torch/torch7/wiki/Cheatsheet#installing-and-running-torch)
-* [IPython](http://ipython.org/install.html)
+* [IPython](http://ipython.org/install.html) version 2.2 or above (you can check your version of ipython using ipython --version)
 * ZeroMQ
 ```bash
 # OSX
