@@ -107,6 +107,12 @@ cd iTorch
 luarocks make 
 ```
 
+If you have to use sudo for some reason (if you globally installed torch on Linux for example), use these commands:
+```bash
+sudo env "PATH=$PATH" luarocks make
+sudo chown -R $USER ~/.ipython
+```
+
 ## How iTorch works
 Start iTorch at command-line using the following command:
 ```bash
