@@ -22,7 +22,7 @@ dependencies = {
    "lbase64",
    "env",
    "image",
-   "lzmq"
+   "lzmq >= 0.4.2"
 }
 
 build = {
