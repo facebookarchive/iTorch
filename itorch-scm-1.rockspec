@@ -31,7 +31,7 @@ build = {
    ipy=$(which ipython)   
    if [ -x "$ipy" ]
    then
-	ipybase=$(dirname $(ipython locate profile))
+	ipybase=$(ipython locate)
 	rm -rf $ipybase/profile_torch
 	ipython profile create torch
 	echo 'c.KernelManager.kernel_cmd = ["$(LUA_BINDIR)/itorch_launcher","{connection_file}"]' >>$ipybase/profile_torch/ipython_config.py   	
