@@ -201,6 +201,20 @@ function Plot:quad(x0,y0,x1,y1,color,legend)
    return self
 end
 
+function Plot:histogram(x, nBins, min, max, color, legend)
+   min = min or x:min()
+   max = max or x:max()
+   nBins = nBins or 100
+   local hist = torch.histc(x, nBins, min, max)
+   nBins = hist:size(1)
+   local x0 = torch.linspace(min, max, nBins)
+   local x1 = x0 + (max-min)/nBins
+   self:quad(x0, torch.zeros(nBins), x1, hist, color, legend)
+   return self
+end
+
+Plot.hist = Plot.histogram
+
 function Plot:title(t)
    if t then self._title = t end
    return self

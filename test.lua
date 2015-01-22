@@ -52,6 +52,22 @@ plot = Plot():line(x1, y1,'red','example'):legend(true):title('Line Plot Demo'):
 plot = Plot():segment(x1, y1, x1+10,y1+10, 'red','demo'):title('Segment Plot Demo'):draw()
 
 -- quiver plots
-U = torch.randn(3,3):mul(100)
-V = torch.randn(3,3):mul(100)
-plot = Plot():quiver(U,V,'red',''):title('Quiver Plot Demo'):draw()
+xx = torch.linspace(-3,3,10)
+yy = torch.linspace(-3,3,10)
+local function meshgrid(x,y)
+   local xx = torch.repeatTensor(x, y:size(1),1)
+   local yy = torch.repeatTensor(y:view(-1,1), 1, x:size(1))
+    return xx, yy
+end
+Y, X = meshgrid(xx, yy)
+U = -torch.pow(X,2) + Y -1
+V =  X - torch.pow(Y,2) +1
+plot = Plot():quiver(U,V,'red','',10):title('Quiver Plot Demo'):draw()
+
+-- quads/rectangles
+x1=torch.randn(10)
+y1=torch.randn(10)
+plot = Plot():quad(x1,y1,x1+1,y1+1,'red',''):draw()
+
+-- histogram
+plot = Plot():histogram(torch.randn(10000)):draw()
