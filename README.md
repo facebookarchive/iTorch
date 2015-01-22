@@ -86,6 +86,19 @@ plot = Plot():quiver(U,V,'red',''):title('Quiver Plot Demo'):draw()
 ```
 ![screenshot](screenshots/quiver.png "")
 
+```lua
+-- quads/rectangles
+x1=torch.randn(10)
+y1=torch.randn(10)
+plot = Plot():quad(x1,y1,x1+1,y1+1,'red',''):draw()
+```
+
+```lua
+-- histogram
+plot = Plot():histogram(torch.randn(10000)):draw()
+```
+![screenshot](screenshots/hist.png "")
+
 ## Requirements
 iTorch requires or works with
 * Mac OS X or Linux (tested in Ubuntu 14.04)
