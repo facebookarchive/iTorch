@@ -133,28 +133,25 @@ function Plot:quiver(U,V,color,legend,scaling)
       return xx, yy
    end
    local Y, X = meshgrid(xx, yy)
-   local speed = torch.sqrt(torch.cmul(U,U) + torch.cmul(V,V))
-   local theta = torch.atan(torch.cdiv(V,U))
-
-   -- line start
-   local x0 = X:view(-1)
-   local y0 = Y:view(-1)
-
-   -- line length and angle
+   X = X:view(-1)
+   Y = Y:view(-1)
+   U = U:view(-1)
+   V = V:view(-1)
    scaling = scaling or 40
-   local length = speed:view(-1) / scaling
-   local angle = theta:view(-1)
-
-   -- line end
-   local x1 = x0 + torch.cmul(length, torch.cos(angle))
-   local y1 = y0 + torch.cmul(length, torch.sin(angle))
-   ----------------------------------------------------
-   -- calculate arrow-head
+   U = U / scaling
+   V = V / scaling
+   local x0 = X
+   local y0 = Y
+   local x1 = X + U
+   local y1 = Y + V
+   self:segment(x0, y0, x1,y1, color,legend)
+   ------------------------------------------------------------------
+   -- calculate and plot arrow-head
    local ll = (x1 - x0)
    local ll2 = (y1 - y0)
    local len = torch.sqrt(torch.cmul(ll,ll) + torch.cmul(ll2,ll2))
    local h = len / 10 -- arrow length
-   local w = len / 100 -- arrow width
+   local w = len / 20 -- arrow width
    local Ux = torch.cdiv(ll,len)
    local Uy = torch.cdiv(ll2,len)
    local Vx = -Uy
@@ -164,7 +161,43 @@ function Plot:quiver(U,V,color,legend,scaling)
 
    local v2x = x1 - torch.cmul(Ux,h) - torch.cmul(Vx,w);
    local v2y = y1 - torch.cmul(Uy,h) - torch.cmul(Vy,w);
-   self:segment(x0, y0, x1,y1, color,legend):segment(v1x,v1y,v2x,v2y,color):segment(v1x,v1y,x1,y1,color):segment(v2x,v2y,x1,y1,color)
+   self:segment(v1x,v1y,v2x,v2y,color)
+   self:segment(v1x,v1y,x1,y1,color)
+   self:segment(v2x,v2y,x1,y1,color)
+   return self
+end
+
+function Plot:quad(x0,y0,x1,y1,color,legend)
+   -- x and y are [a 1D tensor of N elements or a table of N elements]
+   x0 = tensorValidate(x0)
+   x1 = tensorValidate(x1)
+   y0 = tensorValidate(y0)
+   y1 = tensorValidate(y1)
+   -- check if x and y are same number of elements
+   assert(x0:nElement() == y0:nElement(), 'x0 and y0 should have same number of elements')
+   assert(x0:nElement() == x1:nElement(), 'x0 and x1 should have same number of elements')
+   assert(x0:nElement() == y1:nElement(), 'x0 and y1 should have same number of elements')
+   
+   -- [optional] color is one of: red,blue,green or an html color string (like #FF8932). 
+   -- color can either be a single value, or N values (one value per (x,y) point)
+   -- if no color is specified, it is defaulted to red for all points.
+   -- TODO do color argcheck
+   color = color or 'red'
+   legend = legend or 'unnamed'
+
+   self._data = self._data or {}
+   local _d = {}
+   _d.type = 'Quad'
+   _d.x0 = x0
+   _d.y0 = y0
+   _d.x1 = x1
+   _d.y1 = y1
+   _d.fill_color = color
+   _d.line_color = color
+   if legend then 
+      _d.legend = legend
+   end
+   table.insert(self._data, _d)
    return self
 end
 
@@ -264,10 +297,11 @@ createGlyph['Triangle'] = function(docid, data)
    return createSimpleGlyph(docid, data, 'Triangle')
 end
 
-local function addunit(t,f)
+local function addunit(t,f,f2)
+   f2 = f2 or f
    t[f] = {}
    t[f].units = 'data'
-   t[f].field = f
+   t[f].field = f2
 end
 
 createGlyph['Segment'] = function(docid, data)
@@ -293,6 +327,36 @@ createGlyph['Segment'] = function(docid, data)
    glyph.attributes.size = {}
    glyph.attributes.size.units = 'screen'
    glyph.attributes.size.value = 10
+   glyph.attributes.tags = {}
+   return glyph
+end
+
+createGlyph['Quad'] = function(docid, data)
+   local glyph = newElem('Quad', docid)
+   addunit(glyph.attributes, 'left', 'x0')
+   addunit(glyph.attributes, 'right', 'x1')
+   addunit(glyph.attributes, 'bottom', 'y0')
+   addunit(glyph.attributes, 'top', 'y1')
+   if type(data.line_color) == 'string' then
+      glyph.attributes.line_color = {}
+      glyph.attributes.line_color.value = data.line_color
+   else
+      addunit(glyph.attributes, 'line_color')
+   end
+   glyph.attributes.line_alpha = {}
+   glyph.attributes.line_alpha.units = 'data'
+   glyph.attributes.line_alpha.value = 1.0
+
+   if type(data.fill_color) == 'string' then
+      glyph.attributes.fill_color = {}
+      glyph.attributes.fill_color.value = data.fill_color
+   else
+      addunit(glyph.attributes, 'fill_color')
+   end
+   glyph.attributes.fill_alpha = {}
+   glyph.attributes.fill_alpha.units = 'data'
+   glyph.attributes.fill_alpha.value = 0.7
+
    glyph.attributes.tags = {}
    return glyph
 end
