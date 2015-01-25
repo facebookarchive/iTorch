@@ -154,6 +154,9 @@ function Plot:quiver(U,V,color,legend,scaling)
    local w = len / 20 -- arrow width
    local Ux = torch.cdiv(ll,len)
    local Uy = torch.cdiv(ll2,len)
+   -- zero the nans in Ux and Uy
+   Ux[Ux:ne(Ux)] = 0
+   Uy[Uy:ne(Uy)] = 0
    local Vx = -Uy
    local Vy = Ux
    local v1x = x1 - torch.cmul(Ux,h) + torch.cmul(Vx,w);
