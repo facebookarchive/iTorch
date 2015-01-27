@@ -1,11 +1,11 @@
 --[[
- *  Copyright (c) 2015, Facebook, Inc.
- *  All rights reserved.
- *
- *  This source code is licensed under the BSD-style license found in the
- *  LICENSE file in the root directory of this source tree. An additional grant 
- *  of patent rights can be found in the PATENTS file in the same directory.
- *
+   *  Copyright (c) 2015, Facebook, Inc.
+   *  All rights reserved.
+   *
+   *  This source code is licensed under the BSD-style license found in the
+   *  LICENSE file in the root directory of this source tree. An additional grant
+   *  of patent rights can be found in the PATENTS file in the same directory.
+   *
 ]]--
 local tablex = require 'pl.tablex'
 local uuid = require 'uuid'
@@ -37,10 +37,10 @@ end
 ]]--
 
 local function tensorValidate(x)
-   assert(x and (torch.isTensor(x) and x:dim() == 1) 
-	     or (torch.type(x) == 'table'), 
-	  'input needs to be a 1D tensor of N elements or a table of N elements')
-   if torch.type(x) == 'table' then 
+   assert(x and (torch.isTensor(x) and x:dim() == 1)
+             or (torch.type(x) == 'table'),
+          'input needs to be a 1D tensor/table of N elements')
+   if torch.type(x) == 'table' then
       x = torch.DoubleTensor(x)
    elseif torch.isTensor(x) then
       x = torch.DoubleTensor(x:size()):copy(x)
@@ -53,12 +53,16 @@ function Plot:_simpleGlyph(x,y,color,legend, name) -- TODO: marker
    x = tensorValidate(x)
    y = tensorValidate(y)
    -- check if x and y are same number of elements
-   assert(x:nElement() == y:nElement(), 'x and y have to have same number of elements')
-   
-   -- [optional] color is one of: red,blue,green or an html color string (like #FF8932). 
-   -- color can either be a single value, or N values (one value per (x,y) point)
-   -- if no color is specified, it is defaulted to red for all points.
-   -- TODO do color argcheck
+   assert(x:nElement() == y:nElement(),
+          'x and y have to have same number of elements')
+
+   --[[ [optional] color is one of:
+      red,blue,green or an html color string (like #FF8932)
+      color can either be a single value,
+      or N values (one value per (x,y) point)
+      if no color is specified, it is defaulted to red for all points.
+      TODO do color argcheck
+   ]]--
    color = color or 'red'
    legend = legend or 'unnamed'
 
@@ -69,7 +73,7 @@ function Plot:_simpleGlyph(x,y,color,legend, name) -- TODO: marker
    _d.y = y
    _d.fill_color = color
    _d.line_color = color
-   if legend then 
+   if legend then
       _d.legend = legend
    end
    table.insert(self._data, _d)
@@ -95,14 +99,13 @@ function Plot:segment(x0,y0,x1,y1,color,legend)
    y0 = tensorValidate(y0)
    y1 = tensorValidate(y1)
    -- check if x and y are same number of elements
-   assert(x0:nElement() == y0:nElement(), 'x0 and y0 should have same number of elements')
-   assert(x0:nElement() == x1:nElement(), 'x0 and x1 should have same number of elements')
-   assert(x0:nElement() == y1:nElement(), 'x0 and y1 should have same number of elements')
-   
-   -- [optional] color is one of: red,blue,green or an html color string (like #FF8932). 
-   -- color can either be a single value, or N values (one value per (x,y) point)
-   -- if no color is specified, it is defaulted to red for all points.
-   -- TODO do color argcheck
+   assert(x0:nElement() == y0:nElement(),
+          'x0 and y0 should have same number of elements')
+   assert(x0:nElement() == x1:nElement(),
+          'x0 and x1 should have same number of elements')
+   assert(x0:nElement() == y1:nElement(),
+          'x0 and y1 should have same number of elements')
+
    color = color or 'red'
    legend = legend or 'unnamed'
 
@@ -115,7 +118,7 @@ function Plot:segment(x0,y0,x1,y1,color,legend)
    _d.y1 = y1
    _d.fill_color = color
    _d.line_color = color
-   if legend then 
+   if legend then
       _d.legend = legend
    end
    table.insert(self._data, _d)
@@ -123,8 +126,9 @@ function Plot:segment(x0,y0,x1,y1,color,legend)
 end
 
 function Plot:quiver(U,V,color,legend,scaling)
-   assert(U:dim() == 2 and V:dim() == 2 and U:size(1) == V:size(1) and U:size(2) == V:size(2), 
-	  'U and V should be 2D and of same size')
+   assert(U:dim() == 2 and V:dim() == 2
+             and U:size(1) == V:size(1) and U:size(2) == V:size(2),
+          'U and V should be 2D and of same size')
    local xx = torch.linspace(1,U:size(1), U:size(1)):typeAs(U)
    local yy = torch.linspace(1,U:size(2), U:size(2)):typeAs(V)
    local function meshgrid(x,y)
@@ -177,14 +181,13 @@ function Plot:quad(x0,y0,x1,y1,color,legend)
    y0 = tensorValidate(y0)
    y1 = tensorValidate(y1)
    -- check if x and y are same number of elements
-   assert(x0:nElement() == y0:nElement(), 'x0 and y0 should have same number of elements')
-   assert(x0:nElement() == x1:nElement(), 'x0 and x1 should have same number of elements')
-   assert(x0:nElement() == y1:nElement(), 'x0 and y1 should have same number of elements')
-   
-   -- [optional] color is one of: red,blue,green or an html color string (like #FF8932). 
-   -- color can either be a single value, or N values (one value per (x,y) point)
-   -- if no color is specified, it is defaulted to red for all points.
-   -- TODO do color argcheck
+   assert(x0:nElement() == y0:nElement(),
+          'x0 and y0 should have same number of elements')
+   assert(x0:nElement() == x1:nElement(),
+          'x0 and x1 should have same number of elements')
+   assert(x0:nElement() == y1:nElement(),
+          'x0 and y1 should have same number of elements')
+
    color = color or 'red'
    legend = legend or 'unnamed'
 
@@ -197,7 +200,7 @@ function Plot:quad(x0,y0,x1,y1,color,legend)
    _d.y1 = y1
    _d.fill_color = color
    _d.line_color = color
-   if legend then 
+   if legend then
       _d.legend = legend
    end
    table.insert(self._data, _d)
@@ -244,12 +247,12 @@ local function combineTable(x)
       local xx = x[i]
       local limit
       if torch.isTensor(xx) then
-	 limit = xx:size(1)
+         limit = xx:size(1)
       else
-	 limit = #xx
+         limit = #xx
       end
       for j=1,limit do
-	 table.insert(y, xx[j])
+         table.insert(y, xx[j])
       end
    end
    return y
@@ -389,9 +392,9 @@ local function createDataRange1d(docid, cds, col)
       local c = cds[i]
       drx.attributes.sources[i].columns = {}
       for k,cname in ipairs(c.attributes.column_names) do
-	 if cname:sub(1,1) == col then
-	    table.insert(drx.attributes.sources[i].columns, cname)
-	 end
+         if cname:sub(1,1) == col then
+            table.insert(drx.attributes.sources[i].columns, cname)
+         end
       end
    end
    return drx
@@ -462,9 +465,9 @@ local function createColumnDataSource(docid, data)
    cds.attributes.data = {}
    for k,v in pairs(data) do
       if k ~= 'legend' and k ~= 'type' and type(v) ~= 'string' then
-	 table.insert(cds.attributes.column_names, k)
-	 if torch.isTensor(v) then v = v:contiguous():storage():totable() end
-	 cds.attributes.data[k] = v
+         table.insert(cds.attributes.column_names, k)
+         if torch.isTensor(v) then v = v:contiguous():storage():totable() end
+         cds.attributes.data[k] = v
       end
    end
    return cds
@@ -495,7 +498,7 @@ function Plot:_toAllModels()
       table.insert(all_models, sglyph)
       table.insert(all_models, nsglyph)
 
-      -- GlyphRenderer 
+      -- GlyphRenderer
       local gr = newElem('GlyphRenderer', self._docid)
       gr.attributes.nonselection_glyph = {}
       gr.attributes.nonselection_glyph.type = gltype
@@ -528,8 +531,8 @@ function Plot:_toAllModels()
    local tf1 = newElem('BasicTickFormatter', self._docid)
    local bt1 = newElem('BasicTicker', self._docid)
    bt1.attributes.num_minor_ticks = 5
-   local linearAxis1 = createLinearAxis(self._docid, plot.id, 
-					self._xaxis or json.null, tf1.id, bt1.id)
+   local linearAxis1 = createLinearAxis(self._docid, plot.id,
+                                    self._xaxis or json.null, tf1.id, bt1.id)
    renderers[#renderers+1] = linearAxis1
    local grid1 = createGrid(self._docid, plot.id, 0, bt1.id)
    renderers[#renderers+1] = grid1
@@ -541,8 +544,8 @@ function Plot:_toAllModels()
    local tf2 = newElem('BasicTickFormatter', self._docid)
    local bt2 = newElem('BasicTicker', self._docid)
    bt2.attributes.num_minor_ticks = 5
-   local linearAxis2 = createLinearAxis(self._docid, plot.id, 
-					self._yaxis or json.null, tf2.id, bt2.id)
+   local linearAxis2 = createLinearAxis(self._docid, plot.id,
+                                    self._yaxis or json.null, tf2.id, bt2.id)
    renderers[#renderers+1] = linearAxis2
    local grid2 = createGrid(self._docid, plot.id, 1, bt2.id)
    renderers[#renderers+1] = grid2
@@ -550,17 +553,18 @@ function Plot:_toAllModels()
    table.insert(all_models, bt2)
    table.insert(all_models, linearAxis2)
    table.insert(all_models, grid2)
-   
+
    local tools = {}
    tools[1] = createTool(self._docid, 'PanTool', plot.id, {'width', 'height'})
-   tools[2] = createTool(self._docid, 'WheelZoomTool', plot.id, {'width', 'height'})
+   tools[2] = createTool(self._docid, 'WheelZoomTool', plot.id,
+                         {'width', 'height'})
    tools[3] = createTool(self._docid, 'BoxZoomTool', plot.id, nil)
    tools[4] = createTool(self._docid, 'PreviewSaveTool', plot.id, nil)
    tools[5] = createTool(self._docid, 'ResizeTool', plot.id, nil)
    tools[6] = createTool(self._docid, 'ResetTool', plot.id, nil)
    for i=1,#tools do table.insert(all_models, tools[i]) end
-   
-   if self._legend then 
+
+   if self._legend then
       local legend = createLegend(self._docid, plot.id, self._data, grs)
       renderers[#renderers+1] = legend
       table.insert(all_models, legend)
@@ -619,58 +623,58 @@ local base_template = [[
 <script type="text/javascript">
 $(function() {
     if (typeof (window._bokeh_onload_callbacks) === "undefined"){
-	window._bokeh_onload_callbacks = [];
+  window._bokeh_onload_callbacks = [];
     }
     function load_lib(url, callback){
-	window._bokeh_onload_callbacks.push(callback);
-	if (window._bokeh_is_loading){
-	    console.log("Bokeh: BokehJS is being loaded, scheduling callback at", new Date());
-	    return null;
-	}
-	console.log("Bokeh: BokehJS not loaded, scheduling load and callback at", new Date());
-	window._bokeh_is_loading = true;
-	var s = document.createElement('script');
-	s.src = url;
-	s.async = true;
-	s.onreadystatechange = s.onload = function(){
-	    Bokeh.embed.inject_css("http://cdn.pydata.org/bokeh-0.7.0.min.css");
-	    window._bokeh_onload_callbacks.forEach(function(callback){callback()});
-	};
-	s.onerror = function(){
-	    console.warn("failed to load library " + url);
-	};
-	document.getElementsByTagName("head")[0].appendChild(s);
+  window._bokeh_onload_callbacks.push(callback);
+  if (window._bokeh_is_loading){
+      console.log("Bokeh: BokehJS is being loaded, scheduling callback at", new Date());
+      return null;
+  }
+  console.log("Bokeh: BokehJS not loaded, scheduling load and callback at", new Date());
+  window._bokeh_is_loading = true;
+  var s = document.createElement('script');
+  s.src = url;
+  s.async = true;
+  s.onreadystatechange = s.onload = function(){
+      Bokeh.embed.inject_css("http://cdn.pydata.org/bokeh-0.7.0.min.css");
+      window._bokeh_onload_callbacks.forEach(function(callback){callback()});
+  };
+  s.onerror = function(){
+      console.warn("failed to load library " + url);
+  };
+  document.getElementsByTagName("head")[0].appendChild(s);
     }
 
     bokehjs_url = "http://cdn.pydata.org/bokeh-0.7.0.min.js"
 
     var elt = document.getElementById("${window_id}");
     if(elt==null) {
-	console.log("Bokeh: ERROR: autoload.js configured with elementid '${window_id}'"  
-		    + "but no matching script tag was found. ")
-	return false;
+  console.log("Bokeh: ERROR: autoload.js configured with elementid '${window_id}'"
+        + "but no matching script tag was found. ")
+  return false;
     }
-    
+
     if(typeof(Bokeh) !== "undefined") {
-	console.log("Bokeh: BokehJS loaded, going straight to plotting");
-	var modelid = "${model_id}";
-	var modeltype = "Plot";
-	var all_models = ${all_models};
-	Bokeh.load_models(all_models);
-	var model = Bokeh.Collections(modeltype).get(modelid);
-	$("#${window_id}").html(''); // clear any previous plot in window_id
-	var view = new model.default_view({model: model, el: "#${window_id}"});
+  console.log("Bokeh: BokehJS loaded, going straight to plotting");
+  var modelid = "${model_id}";
+  var modeltype = "Plot";
+  var all_models = ${all_models};
+  Bokeh.load_models(all_models);
+  var model = Bokeh.Collections(modeltype).get(modelid);
+  $("#${window_id}").html(''); // clear any previous plot in window_id
+  var view = new model.default_view({model: model, el: "#${window_id}"});
     } else {
-	load_lib(bokehjs_url, function() {
-	    console.log("Bokeh: BokehJS plotting callback run at", new Date())
-	    var modelid = "${model_id}";
-	    var modeltype = "Plot";
-	    var all_models = ${all_models};
-	    Bokeh.load_models(all_models);
-	    var model = Bokeh.Collections(modeltype).get(modelid);
-	    $("#${window_id}").html(''); // clear any previous plot in window_id
-	    var view = new model.default_view({model: model, el: "#${window_id}"});
-	});
+  load_lib(bokehjs_url, function() {
+      console.log("Bokeh: BokehJS plotting callback run at", new Date())
+      var modelid = "${model_id}";
+      var modeltype = "Plot";
+      var all_models = ${all_models};
+      Bokeh.load_models(all_models);
+      var model = Bokeh.Collections(modeltype).get(modelid);
+      $("#${window_id}").html(''); // clear any previous plot in window_id
+      var view = new model.default_view({model: model, el: "#${window_id}"});
+  });
     }
 });
 </script>
@@ -713,7 +717,7 @@ function Plot:toTemplate(template, window_id)
       div_id = div_id,
       all_models = encodeAllModels(allmodels),
       model_id = model_id
-   };
+                       };
    return html
 end
 
@@ -745,18 +749,18 @@ function Plot:draw(window_id)
 end
 
 function Plot:redraw()
-  self:draw(self._winid)
-  return self
+   self:draw(self._winid)
+   return self
 end
 
 
 
 function Plot:save(filename)
-   assert(filename and not paths.dirp(filename), 
-	  'filename has to be provided and should not be a directory')
+   assert(filename and not paths.dirp(filename),
+          'filename has to be provided and should not be a directory')
    local html = self:toHTML()
-   local f = assert(io.open(filename, 'w'), 
-		    'filename cannot be opened in write mode')
+   local f = assert(io.open(filename, 'w'),
+                'filename cannot be opened in write mode')
    f:write(html)
    f:close()
    return self
