@@ -168,7 +168,28 @@ local html_template =
 </script>
 <div id="${div_id}"></div>
 ]]
+
+local function escape_js(s)
+   -- single quite
+   s = s:gsub("'","\\'")
+   -- double quote
+   s = s:gsub('"','\\"')
+   -- backslash
+   s = s:gsub("\\","\\\\")
+   -- newline
+   s = s:gsub("\n","\\n")
+   -- carriage return
+   s = s:gsub("\r","\\r")
+   -- tab
+   s = s:gsub("\t","\\t")
+   -- backspace
+   s = s:gsub("\b","\\b")
+   -- form feed
+   s = s:gsub("\f","\\f")
+   return s
+end
 function itorch.html(html, window_id)
+   html = escape_js(html)
    assert(itorch._iopub,'itorch._iopub socket not set')
    assert(itorch._msg,'itorch._msg not set')
 
