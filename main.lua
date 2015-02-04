@@ -68,27 +68,15 @@ local iopub_router = {}
 -- http://ipython.org/ipython-doc/dev/development/messaging.html#kernel-status
 iopub_router.status = function(sock, m, state)
    assert(state, 'state string is nil to iopub_router.status');
-   local o = {}
+   local o = util.msg('status', m)
    o.uuid = {'status'};
-   if m then o.parent_header = m.header end
-   o.header = {};
-   if m then o.header.session = m.header.session else o.header.session = '????'; end
-   o.header.msg_id = uuid.new()
-   o.header.msg_type = 'status';
-   o.header.username = 'torchkernel';
    o.content = { execution_state = state }
    util.ipyEncodeAndSend(sock, o);
 end
 -- http://ipython.org/ipython-doc/dev/development/messaging.html#streams-stdout-stderr-etc
 iopub_router.stream = function(sock, m, stream, text)
    stream = stream or 'stdout'
-   local o = {}
-   o.uuid = m.uuid
-   o.parent_header = m.header
-   o.header = {};
-   o.header.msg_id = uuid.new();
-   o.header.msg_type = 'stream';
-   o.header.session = m.header.session;
+   local o = util.msg('stream', m)
    o.content = {
       name = stream,
       data = text
@@ -100,36 +88,27 @@ end
 -- Shell router
 local shell_router = {}
 shell_router.connect_request = function (sock, msg)
-   msg.parent_header = msg.header
-   msg.header = tablex.deepcopy(msg.parent_header)
-   msg.header.msg_type = 'connect_reply';
-   msg.header.msg_id = uuid.new();
-   msg.content = ipycfg;
-   util.ipyEncodeAndSend(sock, msg);
+   local reply = util.msg('connect_reply', msg)
+   reply.content = ipycfg;
+   util.ipyEncodeAndSend(sock, reply);
 end
 
 shell_router.kernel_info_request = function (sock, msg)
    iopub_router.status(sock, msg, 'busy');
-   msg.parent_header = msg.header
-   msg.header = tablex.deepcopy(msg.parent_header)
-   msg.header.msg_type = 'kernel_info_reply';
-   msg.header.msg_id = uuid.new();
-   msg.content = {
+   local reply = util.msg('kernel_info_reply', msg)
+   reply.content = {
       protocol_version = {4,0},
       language_version = {jit.version_num},
       language = 'luajit'
    }
-   util.ipyEncodeAndSend(sock, msg);
+   util.ipyEncodeAndSend(sock, reply);
    iopub_router.status(sock, msg, 'idle');
 end
 
 shell_router.shutdown_request = function (sock, msg)
    iopub_router.status(sock, msg, 'busy');
-   msg.parent_header = msg.header
-   msg.header = tablex.deepcopy(msg.parent_header)
-   msg.header.msg_type = 'shutdown_reply';
-   msg.header.msg_id = uuid.new();
-   util.ipyEncodeAndSend(sock, msg);
+   local reply = utils.msg('shutdown_reply', msg)
+   util.ipyEncodeAndSend(sock, reply);
    iopub_router.status(sock, msg, 'idle');
    -- cleanup
    print('Shutting down main')
@@ -197,17 +176,12 @@ shell_router.execute_request = function (sock, msg)
       err = perr;
    end
 
-   local o = {}
-   o.uuid = msg.uuid
-   o.parent_header = msg.header
-   o.header = tablex.deepcopy(msg.header)
    if not msg.content.silent and msg.content.store_history then
       table.insert(s.history.code, msg.content.code);
       table.insert(s.history.output, output);
    end
    -- pyin -- iopub
-   o.header.msg_id = uuid.new()
-   o.header.msg_type = 'pyin'
+   local o = util.msg('pyin', msg)
    o.content = {
       code = msg.content.code,
       execution_count = s.exec_count
@@ -218,8 +192,7 @@ shell_router.execute_request = function (sock, msg)
       -- pyout (Now handled by IOHandler.lua)
       
       -- execute_reply -- shell
-      o.header.msg_id = uuid.new()
-      o.header.msg_type = 'execute_reply'
+      o = util.msg('execute_reply', msg)
       o.content = {
          status = 'ok',
          execution_count = s.exec_count,
@@ -230,8 +203,7 @@ shell_router.execute_request = function (sock, msg)
       util.ipyEncodeAndSend(sock, o);
    elseif pok then -- means function execution had error
       -- pyerr -- iopub
-      o.header.msg_id = uuid.new()
-      o.header.msg_type = 'pyerr'
+      o = util.msg('pyerr', msg)
       o.content = {
          execution_count = s.exec_count,
          ename = err or 'Unknown Error',
@@ -240,8 +212,7 @@ shell_router.execute_request = function (sock, msg)
       }
       util.ipyEncodeAndSend(iopub, o);
       -- execute_reply -- shell
-      o.header.msg_id = uuid.new()
-      o.header.msg_type = 'execute_reply'
+      o = util.msg('execute_reply', msg)
       o.content = {
          status = 'error',
          execution_count = s.exec_count,
@@ -252,8 +223,7 @@ shell_router.execute_request = function (sock, msg)
       util.ipyEncodeAndSend(sock, o);
    else -- code has syntax error
       -- pyerr -- iopub
-      o.header.msg_id = uuid.new()
-      o.header.msg_type = 'pyerr'
+      o = util.msg('pyerr', msg)
       o.content = {
          execution_count = s.exec_count,
          ename = err or 'Unknown Error',
@@ -262,8 +232,7 @@ shell_router.execute_request = function (sock, msg)
       }
       util.ipyEncodeAndSend(iopub, o);
       -- execute_reply -- shell
-      o.header.msg_id = uuid.new()
-      o.header.msg_type = 'execute_reply'
+      o = util.msg('execute_reply', msg)
       o.content = {
          status = 'error',
          execution_count = s.exec_count,
@@ -323,13 +292,10 @@ local function extract_completions(text, line, block, pos)
 end
 
 shell_router.complete_request = function(sock, msg)
-   msg.parent_header = msg.header
-   msg.header = tablex.deepcopy(msg.parent_header)
-   msg.header.msg_type = 'complete_reply';
-   msg.header.msg_id = uuid.new();
-   msg.content = extract_completions(msg.content.text, msg.content.line,
+   local reply = util.msg('complete_reply', msg)
+   reply.content = extract_completions(msg.content.text, msg.content.line,
                                      msg.content.block, msg.content.cursor_pos)
-   util.ipyEncodeAndSend(sock, msg);
+   util.ipyEncodeAndSend(sock, reply);
 end
 
 shell_router.object_info_request = function(sock, msg)
