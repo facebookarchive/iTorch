@@ -1,0 +1,8 @@
+{
+ "argv": [
+  "LUA_BINDIR/itorch_launcher",
+  "{connection_file}"
+ ],
+ "display_name": "iTorch",
+ "language": "lua"
+}
