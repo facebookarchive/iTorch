@@ -117,7 +117,7 @@ shell_router.kernel_info_request = function (sock, msg)
    msg.content = {
       protocol_version = {4,0},
       language_version = {jit.version_num},
-      language = 'luajit'
+      language = 'lua'
    }
    util.ipyEncodeAndSend(sock, msg);
    iopub_router.status(sock, msg, 'idle');
