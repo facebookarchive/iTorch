@@ -52,9 +52,31 @@ local function ipyEncodeAndSend(sock, m)
    -- print(o)
    zassert(sock:send_all(o))
 end
+
+local session_id = uuid.new()
+-- function for creating a new message object
+local function msg(msg_type, parent)
+   local m = {}
+   m.header = {}
+   if parent then
+      m.uuid = parent.uuid
+      m.parent_header = parent.header
+   else
+      m.parent_header = {}
+   end
+   m.header.msg_id = uuid.new()
+   m.header.msg_type = msg_type
+   m.header.session = session_id
+   m.header.date = os.date("%Y-%m-%dT%H:%M:%S")
+   m.header.username = 'itorch'
+   m.content = {}
+   return m
+end
+
 ---------------------------------------------------------------------------
 
 util.ipyDecode = ipyDecode
 util.ipyEncodeAndSend = ipyEncodeAndSend
+util.msg = msg
 
 return util
