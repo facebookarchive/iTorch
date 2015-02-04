@@ -1,7 +1,6 @@
 local ffi = require 'ffi'
 local uuid = require 'uuid'
 local base64 = require 'base64'
-local tablex = require 'pl.tablex'
 require 'pl.text'.format_operator()
 require 'image'
 local itorch = require 'itorch._env'
@@ -38,17 +37,9 @@ function itorch.image(img, opts)
       content.data['image/png'] = base64.encode(ffi.string(torch.data(buf), size))
       content.metadata = { }
       content.metadata['image/png'] = {width = imgDisplay:size(2), height = imgDisplay:size(3)}
-      local header = tablex.deepcopy(itorch._msg.header)
-      header.msg_id = uuid.new()
-      header.msg_type = 'display_data'
 
-      -- send displayData
-      local m = {
-         uuid = itorch._msg.uuid,
-         content = content,
-         parent_header = itorch._msg.header,
-         header = header
-      }
+      local m = util.msg('display_data', itorch._msg)
+      m.content = content
       util.ipyEncodeAndSend(itorch._iopub, m)
    else
       error('unhandled type in itorch.image:' .. torch.type(img))
@@ -89,17 +80,8 @@ function itorch.audio(fname)
 	 base64audio = base64audio
       };
    content.metadata = {}
-   local header = tablex.deepcopy(itorch._msg.header)
-   header.msg_id = uuid.new()
-   header.msg_type = 'display_data'
-
-   -- send displayData
-   local m = {
-      uuid = itorch._msg.uuid,
-      content = content,
-      parent_header = itorch._msg.header,
-      header = header
-   }
+   local m = util.msg('display_data', itorch._msg)
+   m.content = content
    util.ipyEncodeAndSend(itorch._iopub, m)
    return window_id
 end
@@ -140,17 +122,8 @@ function itorch.video(fname)
 	 base64video = base64video
       };
    content.metadata = {}
-   local header = tablex.deepcopy(itorch._msg.header)
-   header.msg_id = uuid.new()
-   header.msg_type = 'display_data'
-
-   -- send displayData
-   local m = {
-      uuid = itorch._msg.uuid,
-      content = content,
-      parent_header = itorch._msg.header,
-      header = header
-   }
+   local m = util.msg('display_data', itorch._msg)
+   m.content = content
    util.ipyEncodeAndSend(itorch._iopub, m)
    return window_id
 end
@@ -205,17 +178,10 @@ function itorch.html(html, window_id)
          div_id = div_id
       };
    content.metadata = {}
-   local header = tablex.deepcopy(itorch._msg.header)
-   header.msg_id = uuid.new()
-   header.msg_type = 'display_data'
 
    -- send displayData
-   local m = {
-      uuid = itorch._msg.uuid,
-      content = content,
-      parent_header = itorch._msg.header,
-      header = header
-   }
+   local m = util.msg('display_data', itorch._msg)
+   m.content = content
    util.ipyEncodeAndSend(itorch._iopub, m)
    return window_id
 end

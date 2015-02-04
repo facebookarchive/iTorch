@@ -7,7 +7,6 @@
    *  of patent rights can be found in the PATENTS file in the same directory.
    *
 ]]--
-local tablex = require 'pl.tablex'
 local uuid = require 'uuid'
 local json = require 'cjson'
 require 'pl.text'.format_operator()
@@ -733,17 +732,8 @@ function Plot:draw(window_id)
    content.data = {}
    content.data['text/html'] = self:toTemplate(embed_template, window_id)
    content.metadata = {}
-   local header = tablex.deepcopy(itorch._msg.header)
-   header.msg_id = uuid.new()
-   header.msg_type = 'display_data'
-
-   -- send displayData
-   local m = {
-      uuid = itorch._msg.uuid,
-      content = content,
-      parent_header = itorch._msg.header,
-      header = header
-   }
+   local m = util.msg('display_data', itorch._msg)
+   m.content = content
    util.ipyEncodeAndSend(itorch._iopub, m)
    return self
 end

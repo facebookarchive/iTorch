@@ -107,7 +107,7 @@ end
 
 shell_router.shutdown_request = function (sock, msg)
    iopub_router.status(sock, msg, 'busy');
-   local reply = utils.msg('shutdown_reply', msg)
+   local reply = util.msg('shutdown_reply', msg)
    util.ipyEncodeAndSend(sock, reply);
    iopub_router.status(sock, msg, 'idle');
    -- cleanup
