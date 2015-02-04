@@ -40,6 +40,7 @@ build = {
 	mkdir -p $ipybase/profile_torch/static/base/images
 	mkdir -p $ipybase/kernels/itorch
 	cat kernelspec/kernel.json | sed "s@LUA_BINDIR@$(LUA_BINDIR)@" > $ipybase/kernels/itorch/kernel.json
+	cp kernelspec/*.png $ipybase/kernels/itorch/
 	cp ipynblogo.png $ipybase/profile_torch/static/base/images
 	mkdir -p $ipybase/profile_torch/static/custom/
 	cp custom.js $ipybase/profile_torch/static/custom/
