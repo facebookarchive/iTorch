@@ -17,6 +17,9 @@ function itorch.image(img, opts)
    if torch.isTensor(img) or torch.type(img) == 'table' then
       opts = opts or {input=img, padding=2}
       local imgDisplay = image.toDisplayTensor(opts)
+      if imgDisplay:dim() == 2 then 
+	 imgDisplay = imgDisplay:view(1, imgDisplay:size(1), imgDisplay:size(2))
+      end
       local tmp = os.tmpname() .. '.png'
       image.save(tmp, imgDisplay)
       -------------------------------------------------------------
