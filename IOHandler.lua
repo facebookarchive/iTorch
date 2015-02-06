@@ -50,6 +50,7 @@ do
       local portnum_f = torch.DiskFile(arg[3],'r')
       portnum_f:quiet()
       rawpub_port = portnum_f:readInt()
+      if portnum_f:hasError() then rawpub_port = 0 end
       portnum_f:close()
    end
 end
