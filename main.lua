@@ -62,6 +62,7 @@ do
    portnum_f:close()
 end
 itorch._iopub = iopub -- for the display functions to have access
+arg = nil -- forget the command-line args
 --------------------------------------------------------------
 -- IOPub router
 local iopub_router = {}
