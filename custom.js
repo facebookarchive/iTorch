@@ -18,6 +18,7 @@ $([IPython.events]).on("app_initialized.NotebookApp", function () {
     IPython.CodeCell.options_default['cm_config']['mode'] = 'lua';
 
     CodeMirror.requireMode('lua', function(){
+	IPython.OutputArea.prototype._should_scroll = function(){return false}
         cells = IPython.notebook.get_cells();
         for(var i in cells){
             c = cells[i];

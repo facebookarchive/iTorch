@@ -189,4 +189,24 @@ function itorch.html(html, window_id)
    return window_id
 end
 
+
+local ok,err = pcall(function() require 'xlua' end)
+if ok then
+   local progress_warning = false
+   local last = os.clock()
+   xlua.progress = function(i, n)
+      -- make progress bar really slow in itorch
+      if os.clock() - last > 15 then -- 15 seconds
+	 print('Progress: ' ..  i .. ' / ' ..  n)
+	 last = os.clock()
+      end
+      -- local m = util.msg('clear_output', itorch._msg)
+      -- m.content = {}
+      -- m.content.wait = true
+      -- m.content.display = true
+      -- util.ipyEncodeAndSend(itorch._iopub, m)
+      -- itorch.html(progress_template % {})
+   end
+end
+
 return itorch;
