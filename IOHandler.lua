@@ -73,7 +73,7 @@ function handleSTDO(ev)
 	 o.header = tablex.deepcopy(kvstore.current_msg.header)
 	 o.header.msg_id = uuid.new()
 	 o.header.msg_type = 'pyout'
-    o.header.version = "4.0"
+	 o.header.version = "4.0"
 	 o.content = {
 	    data = {},
 	    metadata = {},
