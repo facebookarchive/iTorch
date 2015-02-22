@@ -67,22 +67,16 @@ function handleSTDO(ev)
    if nbytes > 0 then
       local output = ffi.string(buffer, nbytes)
       if kvstore.current_msg then
-	 local o = {}
-	 o.uuid = kvstore.current_msg.uuid
-	 o.parent_header = kvstore.current_msg.header
-	 o.header = tablex.deepcopy(kvstore.current_msg.header)
-	 o.header.msg_id = uuid.new()
-	 o.header.msg_type = 'pyout'
-	 o.header.version = "4.0"
-	 o.content = {
-	    data = {},
-	    metadata = {},
-	    execution_count = kvstore.exec_count
-	 }
-	 o.content.data['text/plain'] = output
-	 util.ipyEncodeAndSend(iopub, o)
+         local o = util.msg('pyout', kvstore.current_msg)
+         o.content = {
+            data = {},
+            metadata = {},
+            execution_count = kvstore.exec_count
+          }
+         o.content.data['text/plain'] = output
+         util.ipyEncodeAndSend(iopub, o)
       else
-	 print(output)
+         print(output)
       end
    end
    ev:set_interval(1)
@@ -93,20 +87,20 @@ function handleRawPub(sock)
    -- if this message is a key-value from main.lua
    if m[1] == 'private_msg' then
       if m[2] == 'current_msg' then
-	 kvstore[m[2]] = json.decode(m[3])
+         kvstore[m[2]] = json.decode(m[3])
       elseif m[2] == 'exec_count' then
-	 kvstore[m[2]] = tonumber(m[3])
+         kvstore[m[2]] = tonumber(m[3])
       elseif m[2] == 'shutdown' then
-	 sock:send('ACK')
-	 loop:stop()
-	 iopub:close()
-	 rawpub:close()
-	 heartbeat:close()
-	 ffi.C.close(io_stdo)
-	 os.execute('rm -f ' .. arg[2]) -- cleanup files
-	 os.execute('rm -f ' .. arg[3]) 
-	 print('Shutting down iTorch')
-	 os.exit()
+         sock:send('ACK')
+         loop:stop()
+         iopub:close()
+         rawpub:close()
+         heartbeat:close()
+         ffi.C.close(io_stdo)
+         os.execute('rm -f ' .. arg[2]) -- cleanup files
+         os.execute('rm -f ' .. arg[3]) 
+         print('Shutting down iTorch')
+         os.exit()
       end
       sock:send('ACK')
       return
