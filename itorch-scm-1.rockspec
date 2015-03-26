@@ -47,6 +47,7 @@ build = {
 	cp custom.css $ipybase/profile_torch/static/custom/
 	cp itorch $(LUA_BINDIR)/
 	cp itorch_launcher $(LUA_BINDIR)/
+	cp -r ~/.ipython/profile_torch ~/.ipython/profile_itorch
 	cmake -E make_directory build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(LUA_BINDIR)/.." -DCMAKE_INSTALL_PREFIX="$(PREFIX)" && $(MAKE)	
    else
 	echo "Error: could not find ipython in PATH. Do you have it installed?"
