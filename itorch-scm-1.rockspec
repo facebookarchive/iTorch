@@ -2,14 +2,14 @@ package = "itorch"
 version = "scm-1"
 
 source = {
-   url = "git://github.com/soumith/iTorch.git",
+   url = "git://github.com/facebook/iTorch.git",
 }
 
 description = {
    summary = "iPython kernel for Lua / Torch",
    detailed = [[
    ]],
-   homepage = "https://github.com/soumith/iTorch",
+   homepage = "https://github.com/facebook/iTorch",
    license = "BSD"
 }
 
