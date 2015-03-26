@@ -5,4 +5,4 @@ if [ -z "$mode" ]; then
 else
     shift
 fi
-ipython $mode --profile torch $@
+ipython $mode --MappingKernelManager.default_kernel_name="itorch" --Session.key='' $@
