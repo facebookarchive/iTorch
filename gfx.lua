@@ -12,10 +12,11 @@ function itorch.image(img, opts)
    assert(itorch._iopub,'itorch._iopub socket not set')
    assert(itorch._msg,'itorch._msg not set')
    if torch.typename(img) == 'string' then -- assume that it is path
-      img = image.load(img) -- TODO: revamp this to just directly load the blob, infer file prefix, and send.
+      img = image.load(img, 3) -- TODO: revamp this to just directly load the blob, infer file prefix, and send.
    end
    if torch.isTensor(img) or torch.type(img) == 'table' then
-      opts = opts or {input=img, padding=2}
+      opts = opts or {padding=2}
+      opts.input = img
       local imgDisplay = image.toDisplayTensor(opts)
       if imgDisplay:dim() == 2 then 
 	 imgDisplay = imgDisplay:view(1, imgDisplay:size(1), imgDisplay:size(2))
@@ -39,7 +40,7 @@ function itorch.image(img, opts)
       content.data['text/plain'] = 'Console does not support images'
       content.data['image/png'] = base64.encode(ffi.string(torch.data(buf), size))
       content.metadata = { }
-      content.metadata['image/png'] = {width = imgDisplay:size(2), height = imgDisplay:size(3)}
+      content.metadata['image/png'] = {width = imgDisplay:size(3), height = imgDisplay:size(2)}
 
       local m = util.msg('display_data', itorch._msg)
       m.content = content
