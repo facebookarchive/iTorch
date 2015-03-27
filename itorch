@@ -5,4 +5,14 @@ if [ -z "$mode" ]; then
 else
     shift
 fi
-ipython $mode --MappingKernelManager.default_kernel_name="itorch" --Session.key='' $@
+if [ $(ipython --version|cut -f1 -d'.') = 2 ]; then
+    ipython $mode --profile torch $@
+elif [ $(ipython --version|cut -f1 -d'.') = 3 ]; then
+    if [ $mode = "console" ]; then
+	ipython $mode --profile torch $@
+    else
+	ipython $mode --MappingKernelManager.default_kernel_name="itorch" --Session.key='' $@
+    fi
+else
+    echo "Unsupported ipython version. Only major versions 2.xx or 3.xx are supported"
+fi
