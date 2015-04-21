@@ -101,7 +101,7 @@ plot = Plot():histogram(torch.randn(10000)):draw()
 
 ## Requirements
 iTorch requires or works with
-* Mac OS X or Linux (tested in Ubuntu 14.04)
+* Mac OS X or Linux (tested in Ubuntu 14.04 and Arch Linux)
 * [Torch-7](https://github.com/torch/torch7/wiki/Cheatsheet#installing-and-running-torch)
 * [IPython](http://ipython.org/install.html) version 2.2 or above (you can check your version of ipython using ipython --version)
 * ZeroMQ
