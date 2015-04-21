@@ -9,8 +9,9 @@
 ]]--
 local zmq = require 'lzmq'
 local zassert = zmq.assert
-local json=require 'cjson'
+local json = require 'cjson'
 local uuid = require 'uuid'
+local crypto = require 'crypto'
 
 local util = {}
 --------------------------------------------------------------
@@ -38,11 +39,19 @@ local function ipyDecode(sock, m)
       return o
 end
 -- Common encoder function for all messages (except heartbeats which are just looped back)
-local function ipyEncodeAndSend(sock, m)
+-- See http://ipython.org/ipython-doc/stable/development/messaging.html
+local function ipyEncodeAndSend(sock, m, key)
+   -- Message digest (for HMAC signature)
+   local d = crypto.hmac.new('sha256', key)
+   d:update(json.encode(m.header))
+   if m.parent_header then d:update(json.encode(m.parent_header)) else d:update('{}') end
+   if m.metadata then d:update(json.encode(m.metadata)) else d:update('{}') end
+   if m.content then d:update(json.encode(m.content)) else d:update('{}') end
+   
    local o = {}
    for k,v in ipairs(m.uuid) do o[#o+1] = v end
    o[#o+1] = '<IDS|MSG>'
-   o[#o+1] = ''
+   o[#o+1] = d:final()
    o[#o+1] = json.encode(m.header)
    if m.parent_header then o[#o+1] = json.encode(m.parent_header) else o[#o+1] = '{}' end
    if m.metadata then o[#o+1] = json.encode(m.metadata) else o[#o+1] = '{}' end

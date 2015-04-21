@@ -12,9 +12,9 @@ require 'env'
 local zmq = require 'lzmq'
 local zloop = require 'lzmq.loop'
 local zassert = zmq.assert
-local json=require 'cjson'
+local json = require 'cjson'
 local uuid = require 'uuid'
-local ffi = require'ffi'
+local ffi = require 'ffi'
 local util = require 'itorch.util'
 local context = zmq.context()
 local tablex = require 'pl.tablex'

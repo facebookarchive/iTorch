@@ -11,7 +11,7 @@
 local zmq = require 'lzmq'
 local zloop = require 'lzmq.loop'
 local zassert = zmq.assert
-local json=require 'cjson'
+local json = require 'cjson'
 local uuid = require 'uuid'
 local tablex = require 'pl.tablex'
 
@@ -72,7 +72,7 @@ iopub_router.status = function(sock, m, state)
    local o = util.msg('status', m)
    o.uuid = {'status'};
    o.content = { execution_state = state }
-   util.ipyEncodeAndSend(sock, o);
+   util.ipyEncodeAndSend(sock, o, ipycfg.key);
 end
 -- http://ipython.org/ipython-doc/dev/development/messaging.html#streams-stdout-stderr-etc
 iopub_router.stream = function(sock, m, stream, text)
@@ -82,7 +82,7 @@ iopub_router.stream = function(sock, m, stream, text)
       name = stream,
       data = text
    }
-   util.ipyEncodeAndSend(sock, o);
+   util.ipyEncodeAndSend(sock, o, ipycfg.key);
 end
 
 ---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ local shell_router = {}
 shell_router.connect_request = function (sock, msg)
    local reply = util.msg('connect_reply', msg)
    reply.content = ipycfg;
-   util.ipyEncodeAndSend(sock, reply);
+   util.ipyEncodeAndSend(sock, reply, ipycfg.key);
 end
 
 shell_router.kernel_info_request = function (sock, msg)
@@ -102,14 +102,14 @@ shell_router.kernel_info_request = function (sock, msg)
       language_version = {jit.version_num},
       language = 'lua'
    }
-   util.ipyEncodeAndSend(sock, reply);
+   util.ipyEncodeAndSend(sock, reply, ipycfg.key);
    iopub_router.status(sock, msg, 'idle');
 end
 
 shell_router.shutdown_request = function (sock, msg)
    iopub_router.status(sock, msg, 'busy');
    local reply = util.msg('shutdown_reply', msg)
-   util.ipyEncodeAndSend(sock, reply);
+   util.ipyEncodeAndSend(sock, reply, ipycfg.key);
    iopub_router.status(sock, msg, 'idle');
    -- cleanup
    print('Shutting down main')
@@ -187,7 +187,7 @@ shell_router.execute_request = function (sock, msg)
       code = msg.content.code,
       execution_count = s.exec_count
    }
-   util.ipyEncodeAndSend(iopub, o);
+   util.ipyEncodeAndSend(iopub, o, ipycfg.key);
 
    if ok then
       -- pyout (Now handled by IOHandler.lua)
@@ -201,7 +201,7 @@ shell_router.execute_request = function (sock, msg)
          user_variables = {},
          user_expressions = {}
       }
-      util.ipyEncodeAndSend(sock, o);
+      util.ipyEncodeAndSend(sock, o, ipycfg.key);
    elseif pok then -- means function execution had error
       -- pyerr -- iopub
       o = util.msg('pyerr', msg)
@@ -211,7 +211,7 @@ shell_router.execute_request = function (sock, msg)
          evalue = '',
          traceback = {err}
       }
-      util.ipyEncodeAndSend(iopub, o);
+      util.ipyEncodeAndSend(iopub, o, ipycfg.key);
       -- execute_reply -- shell
       o = util.msg('execute_reply', msg)
       o.content = {
@@ -221,7 +221,7 @@ shell_router.execute_request = function (sock, msg)
          evalue = '',
          traceback = {err}
       }
-      util.ipyEncodeAndSend(sock, o);
+      util.ipyEncodeAndSend(sock, o, ipycfg.key);
    else -- code has syntax error
       -- pyerr -- iopub
       o = util.msg('pyerr', msg)
@@ -231,7 +231,7 @@ shell_router.execute_request = function (sock, msg)
          evalue = '',
          traceback = {perr}
       }
-      util.ipyEncodeAndSend(iopub, o);
+      util.ipyEncodeAndSend(iopub, o, ipycfg.key);
       -- execute_reply -- shell
       o = util.msg('execute_reply', msg)
       o.content = {
@@ -241,7 +241,7 @@ shell_router.execute_request = function (sock, msg)
          evalue = '',
          traceback = {perr}
       }
-      util.ipyEncodeAndSend(sock, o);
+      util.ipyEncodeAndSend(sock, o, ipycfg.key);
    end
    iopub_router.status(iopub, msg, 'idle');
 end
@@ -296,7 +296,7 @@ shell_router.complete_request = function(sock, msg)
    local reply = util.msg('complete_reply', msg)
    reply.content = extract_completions(msg.content.text, msg.content.line,
                                      msg.content.block, msg.content.cursor_pos)
-   util.ipyEncodeAndSend(sock, reply);
+   util.ipyEncodeAndSend(sock, reply, ipycfg.key);
 end
 
 shell_router.object_info_request = function(sock, msg)
