@@ -15,6 +15,12 @@ local crypto = require 'crypto'
 
 local util = {}
 --------------------------------------------------------------
+-- Signature Key and its setter
+local session_key = ''
+local function setSessionKey(key)
+   session_key = key
+end
+--------------------------------------------------------------
 -- Common decoder function for all messages (except heartbeats which are just looped back)
 local function ipyDecode(sock, m)
    m = m or zassert(sock:recv_all())
@@ -40,9 +46,9 @@ local function ipyDecode(sock, m)
 end
 -- Common encoder function for all messages (except heartbeats which are just looped back)
 -- See http://ipython.org/ipython-doc/stable/development/messaging.html
-local function ipyEncodeAndSend(sock, m, key)
+local function ipyEncodeAndSend(sock, m)
    -- Message digest (for HMAC signature)
-   local d = crypto.hmac.new('sha256', key)
+   local d = crypto.hmac.new('sha256', session_key)
    d:update(json.encode(m.header))
    if m.parent_header then d:update(json.encode(m.parent_header)) else d:update('{}') end
    if m.metadata then d:update(json.encode(m.metadata)) else d:update('{}') end
@@ -87,5 +93,6 @@ end
 util.ipyDecode = ipyDecode
 util.ipyEncodeAndSend = ipyEncodeAndSend
 util.msg = msg
+util.setSessionKey = setSessionKey
 
 return util

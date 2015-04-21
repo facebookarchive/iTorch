@@ -12,7 +12,7 @@ require 'env'
 local zmq = require 'lzmq'
 local zloop = require 'lzmq.loop'
 local zassert = zmq.assert
-local json = require 'cjson'
+local json=require 'cjson'
 local uuid = require 'uuid'
 local ffi = require 'ffi'
 local util = require 'itorch.util'
@@ -25,6 +25,9 @@ local ipyfile = assert(io.open(arg[1], "rb"), "Could not open iPython config")
 local ipyjson = ipyfile:read("*all")
 ipyfile:close()
 local ipycfg = json.decode(ipyjson)
+--------------------------------------------------------------
+-- set session key
+util.setSessionKey(ipycfg.key)
 --------------------------------------------------------------
 --- The libc functions used by this process (for non-blocking IO)
 ffi.cdef[[
