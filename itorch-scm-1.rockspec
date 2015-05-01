@@ -22,7 +22,8 @@ dependencies = {
    "lbase64",
    "env",
    "image",
-   "lzmq >= 0.4.2"
+   "lzmq >= 0.4.2",
+   "luacrypto"
 }
 
 build = {
