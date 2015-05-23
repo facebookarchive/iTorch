@@ -2,6 +2,13 @@
 currdir=`dirname $0`
 currdir=$(cd "$currdir" && pwd)
 
+# Support qtlua, if it is available
+if [[ -f $currdir/qlua ]]; then
+	LUA=$currdir/qlua
+else
+	LUA=$currdir/luajit
+fi
+
 # Pipe for stdout
 IO_STDO=$(mktemp -t itorch.stdout.XXXXXXXXXX)
 rm $IO_STDO
@@ -14,7 +21,7 @@ fi
 # Process 1 writes the port number to communicate to this file
 # Process 2 reades from this file and binds to that port
 IO_PORTNUM=$(mktemp -t itorch.PORTNUM.XXXXXXXXXX)
-$currdir/luajit -e "arg={'$1','$IO_PORTNUM'};require 'itorch.main'" 2>&1 >$IO_STDO &
-$currdir/luajit -e "arg={'$1','$IO_STDO','$IO_PORTNUM'};require 'itorch.IOHandler'"
+"$LUA" -e "arg={'$1','$IO_PORTNUM'};require 'itorch.main'" 2>&1 >$IO_STDO &
+"$LUA" -e "arg={'$1','$IO_STDO','$IO_PORTNUM'};require 'itorch.IOHandler'"
 
 # temporary files $IO_STDO and $IO_PORTNUM are cleaned up on shutdown of itorch.IOHandler
