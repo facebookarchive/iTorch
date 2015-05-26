@@ -108,6 +108,8 @@ iTorch requires or works with
 ```bash
 # OSX
 brew install zeromq
+brew install openssl
+luarocks install luacrypto OPENSSL_DIR=/usr/local/opt/openssl/
 
 # Ubuntu
 sudo apt-get install libzmq3-dev
