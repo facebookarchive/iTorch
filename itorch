@@ -5,14 +5,21 @@ if [ -z "$mode" ]; then
 else
     shift
 fi
-if [ $(ipython --version|cut -f1 -d'.') = 2 ]; then
+v=$(ipython --version|cut -f1 -d'.')
+if [ $v = 2 ]; then
     ipython $mode --profile torch $@
-elif [ $(ipython --version|cut -f1 -d'.') = 3 ]; then
-    if [ $mode = "console" ]; then
-	ipython $mode --profile torch $@
+elif [ $v = 3 ]; then
+    if [ $v = "console" ]; then
+	     ipython $mode --profile torch $@
     else
-	ipython $mode --MappingKernelManager.default_kernel_name="itorch" $@
+	     ipython $mode --MappingKernelManager.default_kernel_name="itorch" $@
+    fi
+elif [ $v = 4 ]; then
+    if [ $mode = "console" ]; then
+      jupyter console --kernel=itorch $@
+    else
+      ipython $mode --MappingKernelManager.default_kernel_name="itorch" $@
     fi
 else
-    echo "Unsupported ipython version. Only major versions 2.xx or 3.xx are supported"
+    echo "Unsupported ipython version. Only major versions 2.xx, 3.xx, or 4.xx (Jupyter) are supported"
 fi
