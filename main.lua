@@ -147,6 +147,7 @@ shell_router.execute_request = function (sock, msg)
    if not msg.content.silent and msg.content.store_history then
       s.exec_count = s.exec_count + 1;
    end
+ 
    -- send current session info to IOHandler, blocking-wait for ACK that it received it
    iopub:send_all({'private_msg', 'current_msg', json.encode(msg)})
    assert(zassert(iopub:recv()) == 'ACK')
@@ -154,6 +155,7 @@ shell_router.execute_request = function (sock, msg)
    assert(zassert(iopub:recv()) == 'ACK')
 
    local line = msg.content.code
+ 
    -- help
    if line and line:find('^%s-?') then
       local pkg = line:gsub('^%s-?','')
@@ -253,6 +255,10 @@ shell_router.history_request = function (sock, msg)
    print('WARNING: history_request not handled yet');
 end
 
+shell_router.comm_open = function (sock,msg)
+   print('WARNING: comm_open not handled yet');
+end
+
 local word_break_characters = '[" \t\n\"\\\'><=;:%+%-%*/%%^~#{}%(%)%[%],"]'
 
 local function extract_completions(text, line, block, pos)
@@ -311,7 +317,7 @@ end
 local function handleShell(sock)
    local msg = util.ipyDecode(sock)
    assert(shell_router[msg.header.msg_type],
-          'Cannot find appropriate message handler for ' .. msg.header.msg_type)
+         'Cannot find appropriate message handler for ' .. msg.header.msg_type)
    return shell_router[msg.header.msg_type](sock, msg);
 end
 
