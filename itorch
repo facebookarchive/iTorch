@@ -9,7 +9,7 @@ v=$(ipython --version|cut -f1 -d'.')
 if [ $v = 2 ]; then
     ipython $mode --profile torch $@
 elif [ $v = 3 ]; then
-    if [ $v = "console" ]; then
+    if [ $mode = "console" ]; then
 	     ipython $mode --profile torch $@
     else
 	     ipython $mode --MappingKernelManager.default_kernel_name="itorch" $@
