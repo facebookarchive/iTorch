@@ -210,6 +210,11 @@ function Plot:histogram(x, nBins, min, max, color, legend)
    min = min or x:min()
    max = max or x:max()
    nBins = nBins or 100
+   if min ~= min or max ~= max then -- nans
+      print('input has nans, please remove nans.')
+      return
+   end
+
    local hist = torch.histc(x, nBins, min, max)
    nBins = hist:size(1)
    local x0 = torch.linspace(min, max, nBins)
