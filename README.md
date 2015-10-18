@@ -138,6 +138,8 @@ OR
 itorch qtconsole  # Qt mode
 ```
 
+In notebook mode, you can use the "New" button to create a new notebook.
+
 ## Examples
 Demo iTorch notebook: http://nbviewer.ipython.org/github/facebook/iTorch/blob/master/iTorch_Demo.ipynb
 
