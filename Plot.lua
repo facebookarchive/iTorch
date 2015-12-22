@@ -47,48 +47,105 @@ local function tensorValidate(x)
    return x
 end
 
-function Plot:_simpleGlyph(x,y,color,legend, name) -- TODO: marker
-   -- x and y are [a 1D tensor of N elements or a table of N elements]
-   x = tensorValidate(x)
-   y = tensorValidate(y)
-   -- check if x and y are same number of elements
-   assert(x:nElement() == y:nElement(),
-          'x and y have to have same number of elements')
+local function _simpleGlyph(name)
+    return function(self, x, y, color, legend, arbitrary_data) -- TODO: marker
+        --[[ [optional] color is one of:
+          red,blue,green or an html color string (like #FF8932)
+          color can either be a single value,
+          or N values (one value per (x,y) point)
+          if no color is specified, it is defaulted to red for all points.
+          TODO do color argcheck
+        ]]--
+        color = color or 'red'
+        legend = legend or 'unnamed'
+        arbitrary_data = arbitrary_data or {}
 
-   --[[ [optional] color is one of:
-      red,blue,green or an html color string (like #FF8932)
-      color can either be a single value,
-      or N values (one value per (x,y) point)
-      if no color is specified, it is defaulted to red for all points.
-      TODO do color argcheck
-   ]]--
-   color = color or 'red'
-   legend = legend or 'unnamed'
+        -- x and y are [a 1D tensor of N elements or a table of N elements]
+        x = tensorValidate(x)
+        y = tensorValidate(y)
+        -- check if x and y are same number of elements
+        assert(x:nElement() == y:nElement(),
+        'x and y have to have same number of elements')
+        assert(type(color) == 'string' or type(color) == 'table',
+          'color must be a string or a table')
+        assert(type(arbitrary_data) == 'table', 'arbitrary_data must be a table')
 
+        self._data = self._data or {}
+        local _d = {}
+        _d.type = name
+        _d.x = x
+        _d.y = y
+        _d.fill_color = color
+        _d.line_color = color
+        _d.legend = legend
+        for k, v in pairs(arbitrary_data) do
+            _d[k] = v
+        end
+        table.insert(self._data, _d)
+        return self
+    end
+end
+
+Plot.circle = _simpleGlyph('Circle')
+Plot.line = _simpleGlyph('Line')
+Plot.triangle = _simpleGlyph('Triangle')
+
+function Plot:text(x, y, text, angle,
+                   text_color, text_font_size, text_align, text_baseline)
    self._data = self._data or {}
    local _d = {}
-   _d.type = name
+   _d.type = 'Text'
    _d.x = x
    _d.y = y
-   _d.fill_color = color
-   _d.line_color = color
-   if legend then
-      _d.legend = legend
-   end
+   _d.text = text
+   if angle then _d.angle = angle end
+   if text_color then _d.text_color = text_color end
+   if text_font_size then _d.text_font_size = text_font_size end
+   if text_align then _d.text_align = text_align end
+   if text_baseline then _d.text_baseline = text_baseline end
    table.insert(self._data, _d)
    return self
 end
 
-function Plot:circle(x,y,color,legend)
-   return self:_simpleGlyph(x,y,color,legend,'Circle')
-end
+function Plot:gscatter(x,y,labels,legend)
+   -- defaults and input checking:
+   local legend = legend
+   if legend == nil then legend = true  end
+   if labels == nil then legend = false end
+   local x = tensorValidate(x)
+   local y = tensorValidate(y)
+   local labels = labels or torch.LongTensor(x:nElement()):zero()
+   labels = tensorValidate(labels)
+   assert(x:nElement() == y:nElement())
+   assert(x:nElement() == labels:nElement())
 
-function Plot:line(x,y,color,legend)
-   return self:_simpleGlyph(x,y,color,legend,'Line')
-end
+   -- make list of labels:
+   local numClasses = 0
+   local classes = {}
+   for n = 1,labels:nElement() do
+     if classes[ labels[n] ] == nil then
+       numClasses = numClasses + 1
+       classes[ labels[n] ] = numClasses
+     end
+   end
 
-function Plot:triangle(x,y,color,legend)
-   return self:_simpleGlyph(x,y,color,legend,'Triangle')
+   -- redo labeling:
+   local classNames = {}
+   local normLabels = torch.LongTensor(labels:nElement())
+   for n = 1,labels:nElement() do
+     normLabels[n] = classes[ labels[n] ]
+     classNames[ normLabels[n] ] = labels[n]
+   end
+
+   -- plot each class separately:
+   local colors = {'red', 'blue', 'green', 'yellow', 'black', 'brown', 'orange',
+      'pink', 'magenta', 'purple'}
+   for k = 1,numClasses do
+      self:circle(x[torch.eq(normLabels, k)], y[torch.eq(normLabels, k)],
+         colors[1 + (k - 1) % #colors], 'Class ' .. classNames[k])
+   end
+   self:legend(legend)
+   return self
 end
 
 function Plot:segment(x0,y0,x1,y1,color,legend)
@@ -117,9 +174,7 @@ function Plot:segment(x0,y0,x1,y1,color,legend)
    _d.y1 = y1
    _d.fill_color = color
    _d.line_color = color
-   if legend then
-      _d.legend = legend
-   end
+   _d.legend = legend
    table.insert(self._data, _d)
    return self
 end
@@ -199,9 +254,7 @@ function Plot:quad(x0,y0,x1,y1,color,legend)
    _d.y1 = y1
    _d.fill_color = color
    _d.line_color = color
-   if legend then
-      _d.legend = legend
-   end
+   _d.legend = legend
    table.insert(self._data, _d)
    return self
 end
@@ -244,6 +297,21 @@ function Plot:legend(bool)
    return self
 end
 
+function Plot:hover_tool(tooltips)
+    assert(type(tooltips) == 'table', 'tooltips must be a table')
+    for i, x in ipairs(tooltips) do
+        assert(type(x) == 'table', 'tooltips must be a table of table')
+    end
+
+    local _d = {}
+    _d.type = 'HoverTool'
+    _d.tooltips = tooltips
+
+    self._tools = self._tools or {}
+    table.insert(self._tools, _d)
+    return self
+end
+
 -- merges multiple tables into one
 local function combineTable(x)
    local y = {}
@@ -273,6 +341,18 @@ local function newElem(name, docid)
    return c
 end
 
+local function set_attr_from_data(attributes, data, k, expected_type)
+    expected_type = expected_type or 'string'
+    local new_attr = {}
+    if type(data[k]) == expected_type then
+       new_attr.value = data[k]
+    else
+       new_attr.units = 'data'
+       new_attr.field = k
+    end
+    attributes[k] = new_attr
+end
+
 local createGlyph = {}
 local function createSimpleGlyph(docid, data, name)
    local glyph = newElem(name, docid)
@@ -282,23 +362,11 @@ local function createSimpleGlyph(docid, data, name)
    glyph.attributes.y = {}
    glyph.attributes.y.units = 'data'
    glyph.attributes.y.field = 'y'
-   glyph.attributes.line_color = {}
-   if type(data.line_color) == 'string' then
-      glyph.attributes.line_color.value = data.line_color
-   else
-      glyph.attributes.line_color.units = 'data'
-      glyph.attributes.line_color.field = 'line_color'
-   end
+   set_attr_from_data(glyph.attributes, data, 'line_color')
    glyph.attributes.line_alpha = {}
    glyph.attributes.line_alpha.units = 'data'
    glyph.attributes.line_alpha.value = 1.0
-   glyph.attributes.fill_color = {}
-   if type(data.fill_color) == 'string' then
-      glyph.attributes.fill_color.value = data.fill_color
-   else
-      glyph.attributes.fill_color.units = 'data'
-      glyph.attributes.fill_color.field = 'fill_color'
-   end
+   set_attr_from_data(glyph.attributes, data, 'fill_color')
    glyph.attributes.fill_alpha = {}
    glyph.attributes.fill_alpha.units = 'data'
    glyph.attributes.fill_alpha.value = 0.2
@@ -321,6 +389,20 @@ createGlyph['Triangle'] = function(docid, data)
    return createSimpleGlyph(docid, data, 'Triangle')
 end
 
+createGlyph['Text'] = function(docid, data)
+    local glyph = newElem('Text', docid)
+    set_attr_from_data(glyph.attributes, data, 'x', 'number')
+    set_attr_from_data(glyph.attributes, data, 'y', 'number')
+    set_attr_from_data(glyph.attributes, data, 'text')
+    set_attr_from_data(glyph.attributes, data, 'text_color')
+    set_attr_from_data(glyph.attributes, data, 'text_font_size')
+    set_attr_from_data(glyph.attributes, data, 'text_align')
+    set_attr_from_data(glyph.attributes, data, 'text_baseline')
+    set_attr_from_data(glyph.attributes, data, 'angle', 'number')
+
+    return glyph
+end
+
 local function addunit(t,f,f2)
    f2 = f2 or f
    t[f] = {}
@@ -334,12 +416,7 @@ createGlyph['Segment'] = function(docid, data)
    addunit(glyph.attributes, 'x1')
    addunit(glyph.attributes, 'y0')
    addunit(glyph.attributes, 'y1')
-   if type(data.line_color) == 'string' then
-      glyph.attributes.line_color = {}
-      glyph.attributes.line_color.value = data.line_color
-   else
-      addunit(glyph.attributes, 'line_color')
-   end
+   set_attr_from_data(glyph.attributes, data, 'line_color')
    glyph.attributes.line_alpha = {}
    glyph.attributes.line_alpha.units = 'data'
    glyph.attributes.line_alpha.value = 1.0
@@ -361,22 +438,12 @@ createGlyph['Quad'] = function(docid, data)
    addunit(glyph.attributes, 'right', 'x1')
    addunit(glyph.attributes, 'bottom', 'y0')
    addunit(glyph.attributes, 'top', 'y1')
-   if type(data.line_color) == 'string' then
-      glyph.attributes.line_color = {}
-      glyph.attributes.line_color.value = data.line_color
-   else
-      addunit(glyph.attributes, 'line_color')
-   end
+   set_attr_from_data(glyph.attributes, data, 'line_color')
    glyph.attributes.line_alpha = {}
    glyph.attributes.line_alpha.units = 'data'
    glyph.attributes.line_alpha.value = 1.0
 
-   if type(data.fill_color) == 'string' then
-      glyph.attributes.fill_color = {}
-      glyph.attributes.fill_color.value = data.fill_color
-   else
-      addunit(glyph.attributes, 'fill_color')
-   end
+   set_attr_from_data(glyph.attributes, data, 'fill_color')
    glyph.attributes.fill_alpha = {}
    glyph.attributes.fill_alpha.units = 'data'
    glyph.attributes.fill_alpha.value = 0.7
@@ -566,6 +633,15 @@ function Plot:_toAllModels()
    tools[4] = createTool(self._docid, 'PreviewSaveTool', plot.id, nil)
    tools[5] = createTool(self._docid, 'ResizeTool', plot.id, nil)
    tools[6] = createTool(self._docid, 'ResetTool', plot.id, nil)
+   for i, x in ipairs(self._tools or {}) do
+       local t = createTool(self._docid, x.type, plot.id, nil)
+       for k, v in pairs(x) do
+           if k ~= 'type' then
+               t.attributes[k] = v
+           end
+       end
+       table.insert(tools, t)
+   end
    for i=1,#tools do table.insert(all_models, tools[i]) end
 
    if self._legend then
