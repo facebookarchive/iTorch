@@ -264,7 +264,7 @@ function Plot:histogram(x, nBins, min, max, color, legend)
    max = max or x:max()
    nBins = nBins or 100
    if min ~= min or max ~= max then -- nans
-      print('input has nans, please remove nans.')
+      print('input has nans, please remove nans. min: ' .. min .. ' max: ' .. max)
       return
    end
 
