@@ -99,6 +99,51 @@ plot = Plot():histogram(torch.randn(10000)):draw()
 ```
 ![screenshot](screenshots/hist.png "")
 
+#### Hover Tool in Plotting
+```lua
+local t = torch.Tensor
+local y = t(10)
+local x = t(y:size()):zero()
+local labels = {}
+for i = 1, 10 do
+    y[i] = i
+	labels[i] = tostring(i)
+end
+
+itorch.Plot()
+  :circle(x, y, 'red', nil, {foo=labels})
+  :hover_tool({{'xy', '@x @y'}, {'foo', '@foo'}})
+  :draw()
+```
+
+#### Text method to plotting
+```lua
+local t = torch.Tensor
+local y = t(10)
+local x = t(y:size()):zero()
+local labels = {}
+for i = 1, 10 do
+    y[i] = i
+	labels[i] = tostring(i)
+end
+
+itorch.Plot():gscatter(x, y)
+  :text(x, y, labels, y, 'black')
+  :triangle(x, y, 'blue')
+  :draw()
+```
+
+#### Group Scatter plot
+Run the following in itorch to produce plots:
+```lua
+x = torch.randn(200); y = torch.randn(200); x:narrow(1, 1, 100):add(2);
+labels = torch.LongTensor(200):zero(); labels:add(1); labels:narrow(1, 1, 100):add(1)
+itorch.Plot():gscatter(x, y):title('Scatter plot without labels'):draw()
+itorch.Plot():gscatter(x, y, labels):title('Scatter plot with labels and legend #1'):legend(true):draw()
+itorch.Plot():gscatter(x, y, labels, true):title('Scatter plot with labels and legend #2'):draw()
+itorch.Plot():gscatter(x, y, labels, false):title('Scatter plot with labels and no legend'):draw()
+```
+
 ## Requirements
 iTorch requires or works with
 * Mac OS X or Linux (tested in Ubuntu 14.04 and Arch Linux)
