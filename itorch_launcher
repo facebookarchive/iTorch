@@ -3,11 +3,7 @@ currdir=`dirname $0`
 currdir=$(cd "$currdir" && pwd)
 
 # Support qtlua, if it is available
-if [[ -f $currdir/qlua ]]; then
-	LUA=$currdir/qlua
-else
-	LUA=$currdir/luajit
-fi
+LUA=$currdir/luajit
 
 # Pipe for stdout
 IO_STDO=$(mktemp -t itorch.stdout.XXXXXXXXXX)
