@@ -15,6 +15,7 @@
 
 local lfs = pcall(require, "lfs") and require"lfs"
 local cowrap, coyield = coroutine.wrap, coroutine.yield
+local loadstring = loadstring or load
 
 local M = { }
 

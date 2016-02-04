@@ -128,6 +128,34 @@ shell_router.shutdown_request = function (sock, msg)
    os.exit()
 end
 
+shell_router.is_complete_request = function(sock, msg)
+   local reply = util.msg('is_complete_reply', msg)
+   reply.content = {}
+   local line = msg.content.code
+   if line == '' or line == nil then
+      reply.content.status = 'incomplete'
+      reply.content.indent = ''
+   else
+      local valid, err 
+      valid, err = loadstring('return ' .. line)
+      if not valid then
+	 valid, err = loadstring(line)
+      end
+      if not valid then
+	 -- now check if incomplete or invalid
+	 if err:sub(#err-4) == '<eof>' then
+	    reply.content.status = 'incomplete'
+	 else
+	    reply.content.status = 'invalid'
+	 end
+	 reply.content.indent = ''
+      else
+	 reply.content.status = 'complete'
+      end
+   end
+   util.ipyEncodeAndSend(sock, reply);
+end
+
 local function traceback(message)
    local tp = type(message)
    if tp ~= "string" and tp ~= "number" then return message end
@@ -305,8 +333,9 @@ end
 
 shell_router.complete_request = function(sock, msg)
    local reply = util.msg('complete_reply', msg)
-   reply.content = extract_completions(msg.content.text, msg.content.line,
-                                     msg.content.block, msg.content.cursor_pos)
+   reply.content = extract_completions(msg.content.text and msg.content.text or '', 
+				       msg.content.line and msg.content.line or msg.content.code,
+				       msg.content.block, msg.content.cursor_pos)
    util.ipyEncodeAndSend(sock, reply);
 end
 
