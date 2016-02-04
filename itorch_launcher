@@ -4,6 +4,10 @@ currdir=$(cd "$currdir" && pwd)
 
 # Support qtlua, if it is available
 LUA=$currdir/luajit
+ls $LUA >/dev/null 2>&1
+if [ $? == 1 ]; then
+    LUA=$currdir/lua
+fi
 
 # Pipe for stdout
 IO_STDO=$(mktemp -t itorch.stdout.XXXXXXXXXX)

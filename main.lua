@@ -23,6 +23,8 @@ require 'env' -- TODO: remove
 -- itorch requires
 require 'itorch'
 local util = require 'itorch.util'
+local loadstring = loadstring or load
+unpack  = unpack or table.unpack
 -----------------------------------------
 local context = zmq.context()
 local session = {}
@@ -102,7 +104,7 @@ shell_router.kernel_info_request = function (sock, msg)
    local reply = util.msg('kernel_info_reply', msg)
    reply.content = {
       protocol_version = {4,0},
-      language_version = {jit.version_num},
+      language_version = {tonumber(_VERSION:sub(#_VERSION-2))},
       language = 'lua'
    }
    util.ipyEncodeAndSend(sock, reply);
