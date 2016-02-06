@@ -717,7 +717,7 @@ $(function() {
   s.src = url;
   s.async = true;
   s.onreadystatechange = s.onload = function(){
-      Bokeh.embed.inject_css("http://cdn.pydata.org/bokeh-0.7.0.min.css");
+      Bokeh.embed.inject_css("https://cdn.pydata.org/bokeh-0.7.0.min.css");
       window._bokeh_onload_callbacks.forEach(function(callback){callback()});
   };
   s.onerror = function(){
@@ -726,7 +726,7 @@ $(function() {
   document.getElementsByTagName("head")[0].appendChild(s);
     }
 
-    bokehjs_url = "http://cdn.pydata.org/bokeh-0.7.0.min.js"
+    bokehjs_url = "https://cdn.pydata.org/bokeh-0.7.0.min.js"
 
     var elt = document.getElementById("${window_id}");
     if(elt==null) {
@@ -769,8 +769,8 @@ local html_template = [[
 <html lang="en">
     <head>
         <meta charset="utf-8">
-        <link rel="stylesheet" href="http://cdn.pydata.org/bokeh-0.7.0.min.css" type="text/css" />
-        <script type="text/javascript" src="http://cdn.pydata.org/bokeh-0.7.0.js"></script>
+        <link rel="stylesheet" href="https://cdn.pydata.org/bokeh-0.7.0.min.css" type="text/css" />
+        <script type="text/javascript" src="https://cdn.pydata.org/bokeh-0.7.0.js"></script>
 ]] .. base_template .. [[
     </head>
     <body>
