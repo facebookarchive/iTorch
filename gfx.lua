@@ -151,12 +151,12 @@ local html_template =
 ]]
 
 local function escape_js(s)
+   -- backslash
+   s = s:gsub("\\","\\\\")
    -- single quite
    s = s:gsub("'","\'")
    -- double quote
    s = s:gsub('"','\"')
-   -- backslash
-   s = s:gsub("\\","\\\\")
    -- newline
    s = s:gsub("\n","\\n")
    -- carriage return
