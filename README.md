@@ -173,6 +173,13 @@ sudo env "PATH=$PATH" luarocks make
 sudo chown -R $USER $(dirname $(ipython locate profile))
 ```
 
+## Docker Images
+Ubuntu 14.04 + iTorch notebook + Miniconda: see docker hub [repo](https://hub.docker.com/r/dhunter/itorch-notebook/).
+
+```bash
+docker pull dhunter/itorch-notebook
+```
+
 ## How iTorch works
 Start iTorch at command-line using the following command:
 ```bash
