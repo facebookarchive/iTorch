@@ -46,7 +46,7 @@ A Plot object is introduced, that can plot different kinds of plots such as scat
 ```lua
 Plot = require 'itorch.Plot'
 ```
-The plotting can be extended to more kinds of plots, as it uses [Bokeh.js](http://bokeh.pydata.org/en/latest/docs/reference/bokehjs.html) as its backend.
+The plotting can be extended to more kinds of plots, as it uses [Bokeh.js](http://bokeh.pydata.org/en/latest/docs/dev_guide/bokehjs.html) as its backend.
 ```lua
 x1 = torch.randn(40):mul(100)
 y1 = torch.randn(40):mul(100)
