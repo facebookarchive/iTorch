@@ -158,6 +158,9 @@ luarocks install luacrypto OPENSSL_DIR=/usr/local/opt/openssl/
 
 # Ubuntu
 sudo apt-get install libzmq3-dev libssl-dev python-zmq
+
+# Ubuntu 16
+luarocks install lzmq
 ```
 
 ## Installing iTorch
