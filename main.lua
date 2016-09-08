@@ -289,6 +289,13 @@ shell_router.comm_open = function (sock,msg)
    print('WARNING: comm_open not handled yet');
 end
 
+shell_router.comm_info_request = function (sock,msg)
+   local reply = util.msg('comm_info_reply', msg)
+   reply.content = {}
+   reply.content.comms = {}
+   util.ipyEncodeAndSend(sock, reply);
+end
+
 local word_break_characters = '[" \t\n\"\\\'><=;:%+%-%*/%%^~#{}%(%)%[%],"]'
 
 local function extract_completions(text, line, block, pos)
