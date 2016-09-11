@@ -211,18 +211,36 @@ end
 local ok,err = pcall(function() require 'xlua' end)
 if ok then
    local progress_warning = false
-   local last = os.clock()
+   local last = 0
+   local _write = io.write
+   local _flush = io.flush
+   local _progress = xlua.progress
    xlua.progress = function(i, n)
       -- make progress bar really slow in itorch
-      if os.clock() - last > 15 then -- 15 seconds
-	 print('Progress: ' ..  i .. ' / ' ..  n)
-	 last = os.clock()
+      if os.clock() - last > 1 then
+         local outstr = ''
+         io.write = function(s)
+            if s ~= '\r' then
+               outstr = outstr..s
+            end
+         end
+         io.flush = function() end
+
+         _progress(i, n)
+
+         io.write = _write
+         io.flush = _flush
+
+         local m = util.msg('clear_output', itorch._msg)
+         m.content = {}
+         m.content.wait = true
+         m.content.display = true
+         util.ipyEncodeAndSend(itorch._iopub, m)
+
+         print(outstr)
+
+         last = os.clock()
       end
-      -- local m = util.msg('clear_output', itorch._msg)
-      -- m.content = {}
-      -- m.content.wait = true
-      -- m.content.display = true
-      -- util.ipyEncodeAndSend(itorch._iopub, m)
       -- itorch.html(progress_template % {})
    end
 end
