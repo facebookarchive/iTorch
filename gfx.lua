@@ -217,10 +217,10 @@ if ok then
    local _progress = xlua.progress
    xlua.progress = function(i, n)
       -- make progress bar really slow in itorch
-      if os.clock() - last > 1 then
+      if os.clock() - last > 1 or i == n then
          local outstr = ''
          io.write = function(s)
-            if s ~= '\r' then
+            if s ~= '\r' and s ~= '\n' then
                outstr = outstr..s
             end
          end
@@ -231,17 +231,16 @@ if ok then
          io.write = _write
          io.flush = _flush
 
-         local m = util.msg('clear_output', itorch._msg)
-         m.content = {}
-         m.content.wait = true
-         m.content.display = true
-         util.ipyEncodeAndSend(itorch._iopub, m)
+         itorch._iopub_router.stream(itorch._iopub, itorch._msg, 'stdout', '\r'..outstr)
 
-         print(outstr)
+         -- local m = util.msg('clear_output', itorch._msg)
+         -- m.content = {}
+         -- m.content.wait = true
+         -- m.content.display = true
+         -- util.ipyEncodeAndSend(itorch._iopub, m)
 
          last = os.clock()
       end
-      -- itorch.html(progress_template % {})
    end
 end
 
