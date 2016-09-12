@@ -89,6 +89,7 @@ iopub_router.stream = function(sock, m, stream, text)
    }
    util.ipyEncodeAndSend(sock, o);
 end
+itorch._iopub_router = iopub_router -- for the display functions to have access
 
 ---------------------------------------------------------------------------
 -- Shell router
