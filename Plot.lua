@@ -517,12 +517,16 @@ local function createLegend(docid, plotid, data, grs)
    l.attributes.plot.type = 'Plot'
    l.attributes.plot.id = plotid
    l.attributes.legends = {}
+   local index = 1
    for i=1,#data do
-      l.attributes.legends[i] = {}
-      l.attributes.legends[i][1] = data[i].legend
-      l.attributes.legends[i][2] = {{}}
-      l.attributes.legends[i][2][1].type = 'GlyphRenderer'
-      l.attributes.legends[i][2][1].id = grs[i].id
+      if data[i].legend ~= nil then
+         l.attributes.legends[index] = {}
+         l.attributes.legends[index][1] = data[i].legend
+         l.attributes.legends[index][2] = {{}}
+         l.attributes.legends[index][2][1].type = 'GlyphRenderer'
+         l.attributes.legends[index][2][1].id = grs[i].id
+         index = index + 1
+      end
    end
    return l
 end
