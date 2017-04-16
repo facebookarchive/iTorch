@@ -39,7 +39,7 @@ itorch.html('<p>magic!</p>', window_id)
 ```
 ![screenshot](screenshots/html.png "")
 
-###Plotting
+### Plotting
 iTorch can plot to screen in notebook mode, or save the plot to disk as a html file.
 
 A Plot object is introduced, that can plot different kinds of plots such as scatter, line, segment, quiver plots.  
