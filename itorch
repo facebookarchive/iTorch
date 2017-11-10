@@ -26,6 +26,12 @@ elif [ $v = 5 ]; then
     else
       ipython $mode --MappingKernelManager.default_kernel_name="itorch" $@
     fi
+elif [ $v = 6 ]; then
+    if [ $mode = "console" ]; then
+      jupyter console --kernel=itorch $@
+    else
+      ipython $mode --MappingKernelManager.default_kernel_name="itorch" $@
+    fi
 else
     echo "Unsupported ipython version. Only major versions 2.xx, 3.xx, 4.xx or 5.xx (Jupyter) are supported"
 fi
